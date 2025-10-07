@@ -293,15 +293,15 @@ const MarketplacePage = () => {
           {(loading || solanaPriceLoading) && (!nftsDataLoaded || !profilesDataLoaded) ? (
             <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-              {showCalculatingPricesMessage ? (
-                <p className="text-lg text-muted-foreground mb-2 font-sans">
-                  Fetching creator profiles and calculating live prices...
-                </p>
-              ) : (
-                <p className="text-lg text-muted-foreground mb-2 font-sans">
-                  Loading {loadedNftsCount} of {totalNftsCount} NFTs ({Math.round(loadingProgress)}%)
-                </p>
-              )}
+              <p className="text-lg text-muted-foreground mb-2 font-sans">
+                {loadedNftsCount === 0 && totalNftsCount > 0 && !nftsDataLoaded ? (
+                  "We are preparing everything so you can have the smoothest browsing experience."
+                ) : showCalculatingPricesMessage ? (
+                  "Fetching creator profiles and calculating live prices..."
+                ) : (
+                  `Loading ${loadedNftsCount} of ${totalNftsCount} NFTs (${Math.round(loadingProgress)}%)`
+                )}
+              </p>
               <Progress value={loadingProgress} className="w-full max-w-sm h-2" />
             </div>
           ) : listedNfts.length === 0 ? (
