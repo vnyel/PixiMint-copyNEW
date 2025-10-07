@@ -14,13 +14,31 @@ interface NftGalleryProps {
   solanaPriceLoading: boolean;
 }
 
+// Fisher-Yates (Knuth) shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+};
+
 const NftGallery = ({ solanaPrice, solanaPriceLoading }: NftGalleryProps) => {
   const { user: currentUser } = useSession(); // Get current user
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("created_at");
+  const [sortBy, setSortBy] = useState("random"); // Default to random
   const [sortOrder, setSortOrder] = useState("desc");
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined); // New state for rarity filter
 
@@ -45,8 +63,8 @@ const NftGallery = ({ solanaPrice, solanaPriceLoading }: NftGalleryProps) => {
         query = query.eq('rarity', filterRarity);
       }
 
-      // Only apply server-side sorting if not sorting by rarity (which requires custom client-side logic)
-      if (sortBy !== 'rarity') {
+      // Only apply server-side sorting if not sorting by 'random' or 'rarity'
+      if (sortBy !== 'random' && sortBy !== 'rarity') {
         query = query.order(sortBy, { ascending: sortOrder === 'asc' });
       }
 
@@ -63,8 +81,12 @@ const NftGallery = ({ solanaPrice, solanaPriceLoading }: NftGalleryProps) => {
         is_liked_by_current_user: currentUser ? nft.nft_likes.some((like: { user_id: string }) => like.user_id === currentUser.id) : false,
       }));
 
+      // Apply client-side shuffling for 'random' sort
+      if (sortBy === 'random') {
+        processedNfts = shuffleArray(processedNfts);
+      }
       // Apply client-side sorting for rarity
-      if (sortBy === 'rarity') {
+      else if (sortBy === 'rarity') {
         const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
         processedNfts.sort((a, b) => {
           const indexA = rarityOrder.indexOf(a.rarity);
@@ -266,12 +288,13 @@ const NftGallery = ({ solanaPrice, solanaPriceLoading }: NftGalleryProps) => {
             <SelectValue placeholder="Sort By" />
           </SelectTrigger>
           <SelectContent className="font-sans border border-border rounded-lg shadow-md">
+            <SelectItem value="random">Random</SelectItem>
             <SelectItem value="created_at">Newest</SelectItem>
             <SelectItem value="price_sol">Price</SelectItem>
             <SelectItem value="rarity">Rarity</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={sortOrder} onValueChange={setSortOrder}>
+        <Select value={sortOrder} onValueChange={setSortOrder} disabled={sortBy === 'random'}>
           <SelectTrigger className="w-full sm:w-[150px] border border-input rounded-lg font-sans shadow-sm">
             <SelectValue placeholder="Order" />
           </SelectTrigger>
