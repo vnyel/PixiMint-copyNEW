@@ -11,6 +11,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay"; // Import Autoplay
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import { useSession } from "@/contexts/SessionContext";
 
@@ -110,6 +111,12 @@ const NftCarousel = ({ nftNames }: NftCarouselProps) => {
           align: "start",
           loop: true,
         }}
+        plugins={[
+          Autoplay({
+            delay: 3000, // Advance every 3 seconds
+            stopOnInteraction: false, // Keep playing even if user interacts
+          }),
+        ]}
         className="w-full"
       >
         <CarouselContent className="-ml-4">
