@@ -148,7 +148,7 @@ const MarketplacePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortBy, sortOrder, filterRarity, debouncedSearchTerm]); // Changed searchTerm to debouncedSearchTerm here
+  }, [sortBy, sortOrder, filterRarity, debouncedSearchTerm]); // Use debouncedSearchTerm here
 
   // Effect to trigger a full fetch when filters/sorts/search change
   useEffect(() => {
