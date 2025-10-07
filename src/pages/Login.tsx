@@ -35,13 +35,14 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
-      <AuthPageStats />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full max-w-6xl">
-        {/* Empty column for spacing on the left, to help center the card */}
-        <div className="hidden lg:block"></div> 
+        {/* AuthPageStats - now in the first column */}
+        <div className="hidden lg:flex justify-center self-start">
+          <AuthPageStats />
+        </div>
         
         {/* Login/Register Card - this will be in the middle column */}
-        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground lg:col-span-1 self-start"> {/* Added self-start */}
+        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground lg:col-span-1 self-start">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-pixel text-primary mb-2">Login to PixiMint</CardTitle>
             <CardDescription className="text-muted-foreground font-sans">Enter your username and password.</CardDescription>
@@ -90,7 +91,7 @@ const Login = () => {
         </Card>
         
         {/* MiniNftCarousel - this will be in the right column */}
-        <div className="hidden lg:flex justify-center self-start"> {/* Removed mt-10 */}
+        <div className="hidden lg:flex justify-center self-start">
           <MiniNftCarousel nftNames={featuredNftNames} />
         </div>
       </div>
