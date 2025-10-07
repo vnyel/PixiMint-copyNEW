@@ -157,7 +157,7 @@ const HomePage = () => {
         <section className="w-full max-w-4xl flex flex-col sm:flex-row justify-center gap-6 mb-12">
           <Button
             onClick={() => navigate("/gallery")}
-            className="flex-1 bg-secondary text-secondary-foreground border border-input rounded-lg hover:bg-accent hover:text-accent-foreground transition-all duration-150 ease-in-out shadow-md font-pixel text-lg py-4 px-6 flex items-center justify-center gap-2"
+            className="flex-1 bg-mint-green text-black border border-mint-green rounded-lg hover:bg-mint-green/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-lg py-4 px-6 flex items-center justify-center gap-2"
           >
             <GalleryVertical className="h-5 w-5" /> View Gallery
           </Button>
