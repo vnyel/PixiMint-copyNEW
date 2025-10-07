@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
-  CarouselItem, // Added CarouselItem here
+  CarouselItem,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
@@ -88,7 +88,7 @@ const MiniNftCarousel = ({ nftNames }: MiniNftCarouselProps) => {
 
   if (loading || solanaPriceLoading) {
     return (
-      <div className="flex justify-center items-center h-48 w-32 bg-card/50 rounded-lg"> {/* Adjusted size */}
+      <div className="flex justify-center items-center h-96 w-64 bg-card/50 rounded-lg"> {/* Reverted size */}
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -96,14 +96,14 @@ const MiniNftCarousel = ({ nftNames }: MiniNftCarouselProps) => {
 
   if (nfts.length === 0) {
     return (
-      <div className="flex justify-center items-center h-48 w-32 bg-card/50 rounded-lg text-center text-muted-foreground text-sm p-4"> {/* Adjusted size */}
+      <div className="flex justify-center items-center h-96 w-64 bg-card/50 rounded-lg text-center text-muted-foreground text-sm p-4"> {/* Reverted size */}
         No NFTs to display.
       </div>
     );
   }
 
   return (
-    <div className="w-32 h-48 flex items-center justify-center"> {/* Adjusted size */}
+    <div className="w-64 h-96 flex items-center justify-center"> {/* Reverted size */}
       <Carousel
         opts={{
           align: "start",
