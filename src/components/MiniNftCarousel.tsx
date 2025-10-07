@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
+  CarouselItem, // Added CarouselItem here
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
