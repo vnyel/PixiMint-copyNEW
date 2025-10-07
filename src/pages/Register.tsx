@@ -34,7 +34,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative"> {/* Added relative positioning */}
+    <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
       <AuthPageStats /> {/* Place AuthPageStats here */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center max-w-5xl w-full">
         <div className="hidden lg:flex justify-center items-center">

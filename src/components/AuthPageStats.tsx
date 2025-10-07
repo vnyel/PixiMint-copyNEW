@@ -58,7 +58,7 @@ const AuthPageStats = () => {
   const marketCapUsd = (marketCap !== null && solanaPrice !== null) ? (marketCap * solanaPrice).toFixed(2) : null;
 
   return (
-    <Card className="absolute top-4 left-4 z-20 bg-card/80 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-64 text-card-foreground font-sans">
+    <Card className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-card/80 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-64 text-card-foreground font-sans">
       <CardContent className="p-0 space-y-2">
         {loadingStats || solanaPriceLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
