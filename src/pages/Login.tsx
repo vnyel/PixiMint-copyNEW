@@ -35,6 +35,9 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center max-w-5xl w-full">
+        <div className="hidden lg:flex justify-center items-center">
+          <MiniNftCarousel nftNames={featuredNftNames} />
+        </div>
         <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-pixel text-primary mb-2">Login to PixiMint</CardTitle>
@@ -82,9 +85,6 @@ const Login = () => {
             </p>
           </CardContent>
         </Card>
-        <div className="hidden lg:flex justify-center items-center">
-          <MiniNftCarousel nftNames={featuredNftNames} />
-        </div>
       </div>
     </div>
   );
