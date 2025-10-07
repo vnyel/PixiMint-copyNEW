@@ -8,11 +8,12 @@ import { useNavigate } from "react-router-dom";
 import { getMintedNftCount, MAX_NFTS } from "@/utils/nft";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { Loader2, Sparkles, GalleryVertical, Fingerprint } from "lucide-react"; // Removed Users icon
+import { Loader2, Sparkles, GalleryVertical, Fingerprint } from "lucide-react";
 import { useSession } from "@/contexts/SessionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
-import PixiMintConcept from "@/components/PixiMintConcept"; // Import the new component
+import PixiMintConcept from "@/components/PixiMintConcept";
+import NftCarousel from "@/components/NftCarousel"; // Import the new NftCarousel component
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -68,26 +69,20 @@ const HomePage = () => {
   const mintedPercentage = nftCount !== null ? (nftCount / MAX_NFTS) * 100 : 0;
   const marketCapUsd = (marketCap !== null && solanaPrice !== null) ? (marketCap * solanaPrice).toFixed(2) : null;
 
+  const featuredNftNames = [
+    "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114"
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-home-image text-foreground font-sans">
       <Header />
       <main className="flex-grow flex flex-col items-center p-4 md:p-8">
-        {/* Hero Section */}
-        <section className="relative w-full max-w-6xl bg-gradient-to-br from-[#00ffa3] to-[#ff42e1] text-white rounded-xl shadow-2xl p-8 md:p-16 text-center mb-12 overflow-hidden">
-          <Sparkles className="absolute top-4 left-4 h-12 w-12 text-white opacity-30 animate-pulse" />
-          <Sparkles className="absolute bottom-4 right-4 h-12 w-12 text-white opacity-30 animate-pulse delay-200" />
-          <h2 className="text-5xl md:text-7xl font-pixel mb-6 leading-tight animate-pulse-text">
-            Mint Your PixiNFT
+        {/* NFT Carousel Hero Section */}
+        <section className="w-full max-w-6xl mx-auto mb-12">
+          <h2 className="text-5xl md:text-7xl font-pixel mb-6 leading-tight text-center text-primary animate-pulse-text">
+            Featured PixiNFTs
           </h2>
-          <p className="text-xl md:text-2xl mb-10 max-w-3xl mx-auto font-sans">
-            Transform your images into unique 8-bit digital art. Join the exclusive 10,000-piece collection and become a PixiMint pioneer!
-          </p>
-          <Button
-            onClick={() => navigate("/nft-lab")}
-            className="bg-white text-black border-2 border-white rounded-full hover:bg-gray-200 transition-all duration-200 ease-in-out shadow-lg font-pixel text-xl md:text-2xl py-4 px-10 transform hover:scale-105"
-          >
-            Start Minting Now!
-          </Button>
+          <NftCarousel nftNames={featuredNftNames} />
         </section>
 
         {/* Collection Statistics */}
