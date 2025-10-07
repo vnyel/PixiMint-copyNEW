@@ -45,7 +45,11 @@ const LeaderboardTable = () => {
           userNftCountMap.set(nft.owner_id, (userNftCountMap.get(nft.owner_id) || 0) + 1); // Increment NFT count
         });
 
-        const sortedUserIds = Array.from(userWorthMap.entries()).sort((a, b) => b[1] - a[1]).map(([userId]) => userId);
+        // Sort users by total NFT worth and take only the top 10
+        const sortedUserIds = Array.from(userWorthMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10) // Limit to top 10 users
+          .map(([userId]) => userId);
 
         if (sortedUserIds.length === 0) {
           setLeaderboard([]);
