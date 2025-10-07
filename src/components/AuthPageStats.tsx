@@ -71,20 +71,27 @@ const AuthPageStats = () => {
               <span className="flex items-center gap-1 text-foreground">
                 <Gem className="h-4 w-4 text-mint-green" /> Minted NFTs:
               </span>
-              <span className="font-bold text-primary">{nftCount !== null ? `${nftCount} / ${MAX_NFTS}` : "N/A"}</span>
+              <span className="font-bold text-primary">
+                {nftCount !== null && nftCount > 0 ? `${nftCount} / ${MAX_NFTS}` : "No NFTs yet!"}
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="flex items-center gap-1 text-foreground">
                 <DollarSign className="h-4 w-4 text-green-500" /> Total Value:
               </span>
               <span className="font-bold text-primary">
-                {marketCap !== null ? `${marketCap.toFixed(2)} SOL` : "N/A"}
+                {marketCap !== null && marketCap > 0 ? `${marketCap.toFixed(2)} SOL` : "0.00 SOL"}
               </span>
             </div>
-            {marketCapUsd && (
+            {marketCapUsd && marketCapUsd !== "0.00" && (
               <div className="flex items-center justify-end text-xs text-muted-foreground">
                 <span>~${marketCapUsd} USD</span>
               </div>
+            )}
+            {nftCount === 0 && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Mint your first NFT to see stats!
+              </p>
             )}
           </>
         )}
