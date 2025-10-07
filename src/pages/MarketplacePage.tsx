@@ -35,7 +35,9 @@ const shuffleArray = (array: any[]) => {
 const MarketplacePage = () => {
   const [listedNfts, setListedNfts] = useState<NFT[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Overall loading state
+  const [nftsDataLoaded, setNftsDataLoaded] = useState(false); // Tracks if NFT data is loaded
+  const [profilesDataLoaded, setProfilesDataLoaded] = useState(false); // Tracks if profile data is loaded
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("random"); // Default to random
   const [sortOrder, setSortOrder] = useState("desc");
@@ -53,13 +55,15 @@ const MarketplacePage = () => {
 
   const fetchMarketplaceNfts = useCallback(async () => {
     setLoading(true);
+    setNftsDataLoaded(false);
+    setProfilesDataLoaded(false);
     setListedNfts([]); // Clear previous NFTs
     setLoadedNftsCount(0);
     setLoadingProgress(0);
     setProfiles(new Map()); // Clear profiles
 
     try {
-      // 1. Fetch total count first
+      // 1. Fetch total count first (0-5% progress)
       let countQuery = supabase
         .from('marketplace_listings')
         .select(`id`, { count: 'exact' })
@@ -85,11 +89,13 @@ const MarketplacePage = () => {
 
       if (totalCount === 0) {
         setLoading(false);
+        setNftsDataLoaded(true); // No NFTs to load, so NFT data is "loaded"
+        setProfilesDataLoaded(true); // No profiles to load
         setLoadingProgress(100);
         return;
       }
 
-      // 2. Fetch all actual NFT listings in batches
+      // 2. Fetch all actual NFT listings in batches (5%-85% progress)
       const allFetchedNfts: any[] = [];
       const uniqueSellerIds = new Set<string>();
 
@@ -133,7 +139,7 @@ const MarketplacePage = () => {
 
         allFetchedNfts.push(...listingsData);
         setLoadedNftsCount(allFetchedNfts.length);
-        setLoadingProgress(5 + (allFetchedNfts.length / totalCount) * 85); // 5% for count, 85% for NFT data
+        setLoadingProgress(5 + (allFetchedNfts.length / totalCount) * 80); // 5% for count, 80% for NFT data
 
         // Collect seller IDs for profile fetching later
         listingsData.forEach(listing => uniqueSellerIds.add(listing.seller_id));
@@ -168,8 +174,10 @@ const MarketplacePage = () => {
       }
 
       setListedNfts(processedNfts);
+      setNftsDataLoaded(true); // NFT data is now loaded
+      setLoadingProgress(85); // Progress after NFT data is processed
 
-      // 3. Fetch profiles for all unique sellers
+      // 3. Fetch profiles for all unique sellers (85%-100% progress)
       const allUserIds = Array.from(uniqueSellerIds);
 
       if (allUserIds.length > 0) {
@@ -192,12 +200,13 @@ const MarketplacePage = () => {
       } else {
         setProfiles(new Map());
       }
+      setProfilesDataLoaded(true); // Profile data is now loaded
       setLoadingProgress(100); // Final progress after fetching profiles
 
     } catch (error: any) {
       showError(`An unexpected error occurred while fetching marketplace NFTs: ${error.message}`);
     } finally {
-      setLoading(false);
+      setLoading(false); // Overall loading is complete
     }
   }, [sortBy, sortOrder, filterRarity, searchTerm]);
 
@@ -228,6 +237,9 @@ const MarketplacePage = () => {
   const handleNftSold = () => {
     fetchMarketplaceNfts(); // Refresh the list after a sale
   };
+
+  // Determine if the loading message should be "Calculating live prices..."
+  const showCalculatingPricesMessage = (loading || solanaPriceLoading) && nftsDataLoaded && !profilesDataLoaded;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -281,12 +293,18 @@ const MarketplacePage = () => {
             </Select>
           </div>
 
-          {loading || solanaPriceLoading ? (
+          {(loading || solanaPriceLoading) && (!nftsDataLoaded || !profilesDataLoaded) ? (
             <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-              <p className="text-lg text-muted-foreground mb-2 font-sans">
-                Loading {loadedNftsCount} of {totalNftsCount} NFTs ({Math.round(loadingProgress)}%)
-              </p>
+              {showCalculatingPricesMessage ? (
+                <p className="text-lg text-muted-foreground mb-2 font-sans">
+                  Fetching creator profiles and calculating live prices...
+                </p>
+              ) : (
+                <p className="text-lg text-muted-foreground mb-2 font-sans">
+                  Loading {loadedNftsCount} of {totalNftsCount} NFTs ({Math.round(loadingProgress)}%)
+                </p>
+              )}
               <Progress value={loadingProgress} className="w-full max-w-sm h-2" />
             </div>
           ) : listedNfts.length === 0 ? (
