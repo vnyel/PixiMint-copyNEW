@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { listNft } from "@/utils/marketplace";
 import { Loader2 } from "lucide-react";
+import { useWallet } from '@solana/wallet-adapter-react'; // Import useWallet
+import { useWalletModal } from '@solana/wallet-adapter-react-ui'; // Import useWalletModal
 
 interface ListNftDialogProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ interface ListNftDialogProps {
 
 const ListNftDialog = ({ isOpen, onClose, userOwnedNfts, onNftListed }: ListNftDialogProps) => {
   const { user: currentUser } = useSession();
+  const wallet = useWallet(); // Get wallet context
+  const { setVisible: setWalletModalVisible } = useWalletModal(); // Get wallet modal visibility setter
   const [selectedNftId, setSelectedNftId] = useState<string | undefined>(undefined);
   const [listingPrice, setListingPrice] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -59,8 +63,14 @@ const ListNftDialog = ({ isOpen, onClose, userOwnedNfts, onNftListed }: ListNftD
       return;
     }
 
+    if (!wallet.connected) {
+      showError("Please connect your Phantom Wallet to list NFTs.");
+      setWalletModalVisible(true); // Open wallet modal
+      return;
+    }
+
     setLoading(true);
-    const success = await listNft(selectedNftId, currentUser.id, price);
+    const success = await listNft(selectedNftId, currentUser.id, price, wallet); // Pass wallet context
     setLoading(false);
 
     if (success) {
@@ -77,7 +87,7 @@ const ListNftDialog = ({ isOpen, onClose, userOwnedNfts, onNftListed }: ListNftD
         <DialogHeader>
           <DialogTitle className="text-2xl font-pixel text-primary">List NFT for Sale</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Select an NFT you own and set its listing price in SOL.
+            Select an NFT you own and set its listing price in SOL. A marketplace fee will apply.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleListNft} className="grid gap-4 py-4">
@@ -112,6 +122,9 @@ const ListNftDialog = ({ isOpen, onClose, userOwnedNfts, onNftListed }: ListNftD
                 disabled={loading}
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Fee: {parseFloat(listingPrice) <= 0.5 ? "0.01 SOL" : `${(parseFloat(listingPrice) * 0.025).toFixed(4)} SOL (2.5%)`}
+              </p>
             </div>
           )}
 
@@ -119,10 +132,10 @@ const ListNftDialog = ({ isOpen, onClose, userOwnedNfts, onNftListed }: ListNftD
             <Button
               type="submit"
               className="bg-primary text-primary-foreground border border-primary rounded-lg hover:bg-primary/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-lg py-2 px-4"
-              disabled={loading || !selectedNftId || !listingPrice || parseFloat(listingPrice) <= 0}
+              disabled={loading || !selectedNftId || !listingPrice || parseFloat(listingPrice) <= 0 || !wallet.connected}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-              {loading ? "Listing..." : "List NFT"}
+              {loading ? "Listing..." : (wallet.connected ? "List NFT" : "Connect Wallet")}
             </Button>
           </DialogFooter>
         </form>

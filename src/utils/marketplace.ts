@@ -2,13 +2,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { SOLANA_CONNECTION } from '@/integrations/solana/config';
 import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { WalletContextState } from '@solana/wallet-adapter-react';
+import { WalletContextState } from '@solana/wallet-adapter-react'; // Import WalletContextState
 import { NFT } from "@/types/nft";
 
-// Fixed PixiMint wallet address for all marketplace sales
+// Fixed PixiMint wallet address for all marketplace sales and fees
 const PIXI_MINT_MARKETPLACE_WALLET_ADDRESS = new PublicKey("VCvpAXWgKF3YgK9MCAcZEFQ1uTCc7ekYUWAnFYxhKFx");
 
-export const listNft = async (nftId: string, sellerId: string, priceSol: number): Promise<boolean> => {
+export const listNft = async (nftId: string, sellerId: string, priceSol: number, wallet: WalletContextState): Promise<boolean> => {
+  console.log("listNft: Initiating listing for NFT:", nftId, "by seller:", sellerId, "at price:", priceSol, "SOL");
+
+  if (!wallet.publicKey || !wallet.connected || !wallet.sendTransaction) {
+    console.error("listNft: Wallet not connected or sendTransaction not available.");
+    showError("Please connect your Phantom Wallet to list NFTs.");
+    return false;
+  }
+
   try {
     // Check if the NFT is already listed
     const { data: existingListing, error: existingListingError } = await supabase
@@ -28,6 +36,40 @@ export const listNft = async (nftId: string, sellerId: string, priceSol: number)
       return false;
     }
 
+    // Calculate the listing fee
+    let feeAmountSol: number;
+    if (priceSol <= 0.5) {
+      feeAmountSol = 0.01; // 0.01 SOL for NFTs worth 0.5 SOL or less
+    } else {
+      feeAmountSol = priceSol * 0.025; // 2.5% of the price for NFTs worth more than 0.5 SOL
+    }
+    console.log(`listNft: Calculated listing fee: ${feeAmountSol} SOL`);
+
+    // 1. Solana Transaction: Transfer the listing fee from seller to PixiMint marketplace address
+    console.log(`listNft: Transferring listing fee of ${feeAmountSol} SOL to PixiMint marketplace address: ${PIXI_MINT_MARKETPLACE_WALLET_ADDRESS.toBase58()}`);
+
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: wallet.publicKey,
+        toPubkey: PIXI_MINT_MARKETPLACE_WALLET_ADDRESS,
+        lamports: Math.round(feeAmountSol * LAMPORTS_PER_SOL), // Convert SOL to lamports
+      })
+    );
+
+    console.log("listNft: Getting latest blockhash...");
+    const { blockhash } = await SOLANA_CONNECTION.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = wallet.publicKey;
+
+    console.log("listNft: Sending fee transaction...");
+    const signature = await wallet.sendTransaction(transaction, SOLANA_CONNECTION);
+    console.log("listNft: Fee transaction sent, signature:", signature);
+    await SOLANA_CONNECTION.confirmTransaction(signature, 'confirmed');
+    console.log("listNft: Solana fee transaction confirmed.");
+    showSuccess(`Marketplace listing fee of ${feeAmountSol} SOL paid successfully!`);
+
+    // 2. Supabase Update: Insert the NFT listing
+    console.log("listNft: Inserting NFT listing into Supabase.");
     const { error } = await supabase
       .from('marketplace_listings')
       .insert({
@@ -45,7 +87,8 @@ export const listNft = async (nftId: string, sellerId: string, priceSol: number)
     showSuccess("NFT listed successfully on the marketplace!");
     return true;
   } catch (error: any) {
-    showError(`An unexpected error occurred while listing NFT: ${error.message}`);
+    console.error("listNft: NFT listing failed with an unexpected error:", error);
+    showError(`NFT listing failed: ${error.message || "Unknown error"}. Please ensure you have enough SOL for the listing fee.`);
     return false;
   }
 };
