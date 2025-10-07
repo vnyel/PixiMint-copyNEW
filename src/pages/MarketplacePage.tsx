@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -20,24 +21,6 @@ import {
 } from "@/components/ui/pagination";
 
 const ITEMS_PER_PAGE = 30; // Define how many NFTs to show per page
-
-// Fisher-Yates (Knuth) shuffle algorithm
-const shuffleArray = (array: any[]) => {
-  let currentIndex = array.length, randomIndex;
-
-  // While there remain elements to shuffle.
-  while (currentIndex !== 0) {
-    // Pick a remaining element.
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
-
-  return array;
-};
 
 const MarketplacePage = () => {
   const [listedNfts, setListedNfts] = useState<NFT[]>([]);
@@ -310,7 +293,7 @@ const MarketplacePage = () => {
               <SelectContent className="font-sans border border-border rounded-lg shadow-md">
                 <SelectItem value="desc">Descending</SelectItem>
                 <SelectItem value="asc">Ascending</SelectItem>
-              </SelectItem>
+              </SelectContent>
             </Select>
             <Select value={filterRarity} onValueChange={setFilterRarity}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
