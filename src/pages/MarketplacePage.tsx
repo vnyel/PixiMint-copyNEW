@@ -235,8 +235,8 @@ const MarketplacePage = () => {
     fetchMarketplaceNfts(); // Refresh the list after a sale
   };
 
-  // Determine if the loading message should be "Calculating live prices..."
-  const showCalculatingPricesMessage = (loading || solanaPriceLoading) && nftsDataLoaded && !profilesDataLoaded;
+  // Determine if the general welcoming message should be shown
+  const showGeneralLoadingMessage = (loadedNftsCount === 0 && totalNftsCount > 0 && !nftsDataLoaded) || ((loading || solanaPriceLoading) && nftsDataLoaded && !profilesDataLoaded);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -294,10 +294,8 @@ const MarketplacePage = () => {
             <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
               <p className="text-lg text-muted-foreground mb-2 font-sans">
-                {loadedNftsCount === 0 && totalNftsCount > 0 && !nftsDataLoaded ? (
+                {showGeneralLoadingMessage ? (
                   "We are preparing everything so you can have the smoothest browsing experience."
-                ) : showCalculatingPricesMessage ? (
-                  "Fetching creator profiles and calculating live prices..."
                 ) : (
                   `Loading ${loadedNftsCount} of ${totalNftsCount} NFTs (${Math.round(loadingProgress)}%)`
                 )}
