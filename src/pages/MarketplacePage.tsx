@@ -258,7 +258,7 @@ const MarketplacePage = () => {
 
 
   return (
-    <div className="min-h-screen flex flex-col bg-marketplace-image text-foreground font-sans">
+    <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
       <Header />
       <main className="flex-grow flex flex-col items-center p-8">
         <h2 className="text-5xl font-pixel text-primary mb-12 text-center tracking-tight">

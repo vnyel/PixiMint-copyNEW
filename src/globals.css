@@ -170,14 +170,6 @@
   background-repeat: no-repeat;
 }
 
-/* Background image for marketplace page */
-.bg-marketplace-image {
-  background-image: url('/Pump.fun (8).png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
 /* Background image for leaderboard page */
 .bg-leaderboard-image {
   background-image: url('/Pump.fun (10).png');
