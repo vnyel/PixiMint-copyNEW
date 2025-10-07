@@ -194,7 +194,7 @@ const MarketplacePage = () => {
           if (sortOrder === 'asc') {
             return indexA - indexB;
           } else {
-            return indexB - indexA;
+            return indexB - a.rarity;
           }
         });
       }
@@ -295,12 +295,12 @@ const MarketplacePage = () => {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
               <p className="text-lg text-muted-foreground mb-2 font-sans">
                 {showGeneralLoadingMessage ? (
-                  "We are preparing everything so you can have the smoothest browsing experience."
+                  "Fetching NFT Security Fingerprints from PixiChain Network"
                 ) : (
                   `Loading ${loadedNftsCount} of ${totalNftsCount} NFTs (${Math.round(loadingProgress)}%)`
                 )}
               </p>
-              <Progress value={loadingProgress} className="w-full max-w-sm h-2" />
+              <Progress value={loadingProgress} className="w-full max-w-sm h-2" indicatorClassName="bg-mint-green" />
             </div>
           ) : listedNfts.length === 0 ? (
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
