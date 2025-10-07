@@ -90,7 +90,7 @@ const Register = () => {
         </Card>
         
         {/* MiniNftCarousel - this will be in the right column */}
-        <div className="hidden lg:flex justify-center items-center">
+        <div className="hidden lg:flex justify-center self-start mt-10"> {/* Adjusted classes */}
           <MiniNftCarousel nftNames={featuredNftNames} />
         </div>
       </div>
