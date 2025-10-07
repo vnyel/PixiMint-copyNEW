@@ -143,9 +143,6 @@ const MarketplacePage = () => {
 
         // Collect seller IDs for profile fetching later
         listingsData.forEach(listing => uniqueSellerIds.add(listing.seller_id));
-
-        // Add a small delay to make progress visible
-        await new Promise(resolve => setTimeout(resolve, 50));
       }
 
       let processedNfts: NFT[] = allFetchedNfts.map((listing: any) => ({
@@ -157,23 +154,6 @@ const MarketplacePage = () => {
         is_liked_by_current_user: listing.nfts.nft_likes.some((like: { user_id: string }) => like.user_id === supabase.auth.getUser()?.id),
       }));
 
-      // Apply client-side sorting for 'random' and 'rarity'
-      if (sortBy === 'random') {
-        processedNfts = shuffleArray(processedNfts);
-      } else if (sortBy === 'rarity') {
-        const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
-        processedNfts.sort((a, b) => {
-          const indexA = rarityOrder.indexOf(a.rarity);
-          const indexB = rarityOrder.indexOf(b.rarity);
-          if (sortOrder === 'asc') {
-            return indexA - indexB;
-          } else {
-            return indexB - indexA;
-          }
-        });
-      }
-
-      setListedNfts(processedNfts);
       setNftsDataLoaded(true); // NFT data is now loaded
       setLoadingProgress(85); // Progress after NFT data is processed
 
@@ -202,6 +182,23 @@ const MarketplacePage = () => {
       }
       setProfilesDataLoaded(true); // Profile data is now loaded
       setLoadingProgress(100); // Final progress after fetching profiles
+
+      // Apply client-side sorting for 'random' and 'rarity' AFTER all data is fetched
+      if (sortBy === 'random') {
+        processedNfts = shuffleArray(processedNfts);
+      } else if (sortBy === 'rarity') {
+        const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+        processedNfts.sort((a, b) => {
+          const indexA = rarityOrder.indexOf(a.rarity);
+          const indexB = rarityOrder.indexOf(b.rarity);
+          if (sortOrder === 'asc') {
+            return indexA - indexB;
+          } else {
+            return indexB - indexA;
+          }
+        });
+      }
+      setListedNfts(processedNfts); // Update with sorted/shuffled data
 
     } catch (error: any) {
       showError(`An unexpected error occurred while fetching marketplace NFTs: ${error.message}`);
