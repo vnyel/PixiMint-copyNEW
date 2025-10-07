@@ -70,7 +70,8 @@ const HomePage = () => {
   const marketCapUsd = (marketCap !== null && solanaPrice !== null) ? (marketCap * solanaPrice).toFixed(2) : null;
 
   const featuredNftNames = [
-    "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114"
+    "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
+    "#595", "#5739", "#1193" // Added new NFTs here
   ];
 
   return (
