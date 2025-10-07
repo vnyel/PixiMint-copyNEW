@@ -13,7 +13,8 @@ import { useSession } from "@/contexts/SessionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import PixiMintConcept from "@/components/PixiMintConcept";
-import NftCarousel from "@/components/NftCarousel"; // Import the new NftCarousel component
+import NftCarousel from "@/components/NftCarousel";
+import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -22,6 +23,9 @@ const HomePage = () => {
   const [marketCap, setMarketCap] = useState<number | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
+
+  // Placeholder Contract Address
+  const placeholderContractAddress = "0xAbc123Def456Ghi789Jkl012Mno345Pqr678Stu901";
 
   const fetchStats = async () => {
     setLoadingStats(true);
@@ -78,7 +82,11 @@ const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-home-image text-foreground font-sans">
       <Header />
-      <main className="flex-grow flex flex-col items-center p-4 md:p-8">
+      <main className="flex-grow flex flex-col items-center p-4 md:p-8 relative"> {/* Added relative positioning */}
+        <div className="absolute top-8 left-8 z-20 max-w-xs"> {/* Positioned top-left */}
+          <ContractAddressCard contractAddress={placeholderContractAddress} />
+        </div>
+
         {/* NFT Carousel Hero Section */}
         <section className="w-full max-w-6xl mx-auto mb-12">
           <h2 className="text-5xl md:text-7xl font-pixel mb-6 leading-tight text-center text-primary animate-pulse-text">

@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import React, { useState, useEffect } from "react"; // Changed import to include useState and useEffect
+import React, { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from '@solana
 import { SOLANA_CONNECTION } from '@/integrations/solana/config';
 import { Profile } from "@/types/nft";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
+import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
 
 interface TokenPackage {
   tokens: number;
@@ -33,6 +34,9 @@ const PixiTokensPage = () => {
   const [loading, setLoading] = useState(true);
   const [transactionLoading, setTransactionLoading] = useState(false);
   const { solanaPrice } = useSolanaPrice(); // For USD conversion
+
+  // Placeholder Contract Address
+  const placeholderContractAddress = "0xAbc123Def456Ghi789Jkl012Mno345Pqr678Stu901";
 
   const PIXI_MINT_WALLET_ADDRESS = new PublicKey("VCvpAXWgKF3YgK9MCAcZEFQ1uTCc7ekYUWAnFYxhKFx"); // Replaced with your actual Pixi Mint wallet address
 
@@ -140,7 +144,11 @@ const PixiTokensPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-pixi-tokens-image text-foreground font-sans">
       <Header />
-      <main className="flex-grow flex flex-col items-center p-8">
+      <main className="flex-grow flex flex-col items-center p-8 relative"> {/* Added relative positioning */}
+        <div className="absolute top-8 left-8 z-20 max-w-xs"> {/* Positioned top-left */}
+          <ContractAddressCard contractAddress={placeholderContractAddress} />
+        </div>
+
         <h2 className="text-5xl font-pixel text-primary mb-12 text-center tracking-tight">
           Get Pixi Tokens
         </h2>
