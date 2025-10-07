@@ -135,8 +135,8 @@ const NftCarousel = ({ nftNames }: NftCarouselProps) => {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        <CarouselPrevious className="bg-mint-green text-black hover:bg-mint-green/90 hover:text-black border-mint-green" />
+        <CarouselNext className="bg-mint-green text-black hover:bg-mint-green/90 hover:text-black border-mint-green" />
       </Carousel>
     </div>
   );
