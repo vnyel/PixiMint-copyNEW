@@ -21,12 +21,30 @@ import {
 
 const ITEMS_PER_PAGE = 30; // Define how many NFTs to show per page
 
+// Fisher-Yates (Knuth) shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+};
+
 const MarketplacePage = () => {
   const [listedNfts, setListedNfts] = useState<NFT[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("listed_at");
+  const [sortBy, setSortBy] = useState("random"); // Default to random
   const [sortOrder, setSortOrder] = useState("desc");
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
@@ -42,17 +60,11 @@ const MarketplacePage = () => {
   const fetchMarketplaceNfts = useCallback(async () => {
     setLoading(true);
     try {
-      // First, get the total count of NFTs matching filters
-      let countQuery = supabase
+      // Fetch all relevant listings with NFT rarity for accurate client-side counting
+      const { data: allListingsWithRarity, error: countError } = await supabase
         .from('marketplace_listings')
-        .select('id', { count: 'exact', head: true })
+        .select(`id, nfts!inner(rarity)`)
         .eq('is_listed', true);
-
-      if (filterRarity && filterRarity !== 'all') {
-        countQuery = countQuery.eq('nfts.rarity', filterRarity);
-      }
-
-      const { count, error: countError } = await countQuery;
 
       if (countError) {
         showError(`Failed to fetch total NFT count: ${countError.message}`);
@@ -60,7 +72,11 @@ const MarketplacePage = () => {
         return;
       }
 
-      setTotalNftsCount(count || 0);
+      let filteredCount = allListingsWithRarity.length;
+      if (filterRarity && filterRarity !== 'all') {
+        filteredCount = allListingsWithRarity.filter(item => item.nfts?.rarity === filterRarity).length;
+      }
+      setTotalNftsCount(filteredCount);
 
       // Calculate the range for the current page
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -82,8 +98,8 @@ const MarketplacePage = () => {
         query = query.eq('nfts.rarity', filterRarity);
       }
 
-      // Apply server-side sorting for non-rarity fields
-      if (sortBy !== 'rarity') {
+      // Apply server-side sorting for non-random/non-rarity fields
+      if (sortBy !== 'random' && sortBy !== 'rarity') {
         query = query.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
       }
 
@@ -107,8 +123,10 @@ const MarketplacePage = () => {
         is_liked_by_current_user: listing.nfts.nft_likes.some((like: { user_id: string }) => like.user_id === supabase.auth.getUser()?.id),
       }));
 
-      // Apply client-side sorting for rarity
-      if (sortBy === 'rarity') {
+      // Apply client-side sorting for 'random' and 'rarity'
+      if (sortBy === 'random') {
+        processedNfts = shuffleArray(processedNfts);
+      } else if (sortBy === 'rarity') {
         const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
         processedNfts.sort((a, b) => {
           const indexA = rarityOrder.indexOf(a.rarity);
@@ -279,19 +297,20 @@ const MarketplacePage = () => {
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent className="font-sans border border-border rounded-lg shadow-md">
+                <SelectItem value="random">Random</SelectItem>
                 <SelectItem value="listed_at">Newest Listing</SelectItem>
                 <SelectItem value="price_sol">Price</SelectItem>
                 <SelectItem value="rarity">Rarity</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortOrder} onValueChange={setSortOrder}>
+            <Select value={sortOrder} onValueChange={setSortOrder} disabled={sortBy === 'random'}>
               <SelectTrigger className="w-full sm:w-[150px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Order" />
               </SelectTrigger>
               <SelectContent className="font-sans border border-border rounded-lg shadow-md">
                 <SelectItem value="desc">Descending</SelectItem>
                 <SelectItem value="asc">Ascending</SelectItem>
-              </SelectContent>
+              </SelectItem>
             </Select>
             <Select value={filterRarity} onValueChange={setFilterRarity}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
