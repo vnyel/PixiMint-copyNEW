@@ -117,7 +117,8 @@ const Header = () => {
       </div>
 
       {/* Center section: PixiMint Logo */}
-      <h1 className="absolute left-1/2 -translate-x-1/2 text-3xl font-pixel text-primary whitespace-nowrap">
+      <h1 className="absolute left-1/2 -translate-x-1/2 text-3xl font-pixel text-primary whitespace-nowrap flex items-center gap-2">
+        <img src="/favicon.png" alt="PixiMint Logo" className="h-7 w-7" />
         <span className="text-foreground">Pixi</span>
         <span className="text-mint-green">Mint</span>
       </h1>
@@ -168,7 +169,7 @@ const Header = () => {
             <DropdownMenuItem onClick={() => navigate("/gallery")} className={`cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2 ${location.pathname === "/gallery" ? "font-bold text-primary" : ""}`}>
               <GalleryVertical className="h-4 w-4" /> Gallery
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/marketplace")} className={`cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2 ${location.pathname === "/marketplace" ? "font-bold text-primary" : ""}`}>
+            <DropdownMenuItem onClick={() => navigate("/marketplace")} className={`cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2 ${location.pathname === "/marketplace" ? "font-bold text-blue-500" : ""}`}>
               <Store className="h-4 w-4 text-blue-500" /> Marketplace
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/pixi-tokens")} className={`cursor-pointer hover:bg-accent hover:text-accent-foreground flex items-center gap-2 ${location.pathname === "/pixi-tokens" ? "font-bold text-primary" : ""}`}>
