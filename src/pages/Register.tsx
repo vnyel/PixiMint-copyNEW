@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { registerUser } from "@/utils/auth";
 import { showError, showSuccess } from "@/utils/toast";
 import MiniNftCarousel from "@/components/MiniNftCarousel";
-import AuthPageStats from "@/components/AuthPageStats"; // Import AuthPageStats
+import AuthPageStats from "@/components/AuthPageStats";
 
 const featuredNftNames = [
   "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114"
@@ -35,12 +35,13 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
-      <AuthPageStats /> {/* Place AuthPageStats here */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center max-w-5xl w-full">
-        <div className="hidden lg:flex justify-center items-center">
-          <MiniNftCarousel nftNames={featuredNftNames} />
-        </div>
-        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground">
+      <AuthPageStats />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full max-w-6xl">
+        {/* Empty column for spacing on the left, to help center the card */}
+        <div className="hidden lg:block"></div> 
+        
+        {/* Login/Register Card - this will be in the middle column */}
+        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground lg:col-span-1">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-pixel text-primary mb-2">Register for PixiMint</CardTitle>
             <CardDescription className="text-muted-foreground font-sans">Create your account to start minting NFTs.</CardDescription>
@@ -87,6 +88,11 @@ const Register = () => {
             </p>
           </CardContent>
         </Card>
+        
+        {/* MiniNftCarousel - this will be in the right column */}
+        <div className="hidden lg:flex justify-center items-center">
+          <MiniNftCarousel nftNames={featuredNftNames} />
+        </div>
       </div>
     </div>
   );
