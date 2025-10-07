@@ -19,19 +19,18 @@ export const registerUser = async (username: string, password: string) => {
   }
 
   if (data.user) {
-    // After successful auth signup, create a profile entry with initial Pixi Tokens
+    // After successful auth signup, update the profile entry with initial Pixi Tokens
+    // A profile is often automatically created by a Supabase trigger, so we update instead of insert.
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert({
-        id: data.user.id,
-        username: username,
+      .update({
+        username: username, // Ensure username is set/updated
         pixi_tokens: 5, // Assign 5 Pixi Tokens to new users
-      });
+      })
+      .eq('id', data.user.id); // Update the profile corresponding to the new user's ID
 
     if (profileError) {
-      // If profile creation fails, log the error but still return the user
-      // as the auth account was created. A manual fix might be needed for tokens.
-      console.error("Failed to create user profile with initial Pixi Tokens:", profileError.message);
+      console.error("Failed to update user profile with initial Pixi Tokens:", profileError.message);
       showError(`Registration successful, but failed to assign initial Pixi Tokens: ${profileError.message}`);
       return data.user;
     }
