@@ -8,6 +8,7 @@ import { registerUser } from "@/utils/auth";
 import { showError, showSuccess } from "@/utils/toast";
 import MiniNftCarousel from "@/components/MiniNftCarousel";
 import AuthPageStats from "@/components/AuthPageStats";
+import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
 
 const featuredNftNames = [
   "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
@@ -19,6 +20,9 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Placeholder Contract Address
+  const placeholderContractAddress = "0xAbc123Def456Ghi789Jkl012Mno345Pqr678Stu901";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +49,7 @@ const Register = () => {
               <p className="text-lg font-bold text-primary">5 free mints for every new user!</p>
             </CardContent>
           </Card>
+          <ContractAddressCard contractAddress={placeholderContractAddress} /> {/* New Contract Address Card */}
         </div>
         
         {/* Login/Register Card - this will be in the middle column */}
