@@ -71,7 +71,7 @@ const HomePage = () => {
 
   const featuredNftNames = [
     "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
-    "#595", "#5739", "#1193" // Added new NFTs here
+    "#595", "#5739" // Removed #1193
   ];
 
   return (
