@@ -12,10 +12,9 @@ import { Loader2, Sparkles, GalleryVertical, Fingerprint } from "lucide-react";
 import { useSession } from "@/contexts/SessionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
-import PixiMintConcept from "@/components/PixiMintConcept";
 import NftCarousel from "@/components/NftCarousel";
 import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
-
+import ConceptCarousel from "@/components/ConceptCarousel"; // Import the new ConceptCarousel
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -159,7 +158,7 @@ const HomePage = () => {
         </section>
 
         {/* Navigation Buttons */}
-        <section className="w-full max-w-4xl flex flex-col sm:flex-row justify-center gap-6 mb-6"> {/* Reduced mb to make space */}
+        <section className="w-full max-w-4xl flex flex-col sm:flex-row justify-center gap-6 mb-6">
           <Button
             onClick={() => navigate("/gallery")}
             className="flex-1 bg-mint-green text-black border border-mint-green rounded-lg hover:bg-mint-green/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-lg py-4 px-6 flex items-center justify-center gap-2"
@@ -169,12 +168,12 @@ const HomePage = () => {
         </section>
 
         {/* Contract Address Card */}
-        <div className="w-full max-w-4xl mb-12"> {/* Added margin-bottom for spacing */}
+        <div className="w-full max-w-4xl mb-12">
           <ContractAddressCard contractAddress={placeholderContractAddress} />
         </div>
 
-        {/* PixiMint Concept Explanation */}
-        <PixiMintConcept />
+        {/* PixiMint Concept Explanation - now a carousel */}
+        <ConceptCarousel />
       </main>
       <Footer />
     </div>
