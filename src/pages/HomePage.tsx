@@ -38,10 +38,11 @@ const HomePage = () => {
       if (error) {
         showError(`Failed to fetch market cap: ${error.message}`);
         setMarketCap(null);
-      } else {
-        const totalWorth = data.reduce((sum, nft) => sum + nft.price_sol, 0);
-        setMarketCap(totalWorth);
+        return;
       }
+
+      const totalWorth = data.reduce((sum, nft) => sum + nft.price_sol, 0);
+      setMarketCap(totalWorth);
     } catch (err: any) {
       showError(`An unexpected error occurred while fetching stats: ${err.message}`);
     } finally {
@@ -71,7 +72,7 @@ const HomePage = () => {
 
   const featuredNftNames = [
     "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
-    "#595", "#5739" // Removed #1193
+    "#595", "#5739", "#6321", "#654", "#9028", "#7766", "#2971", "#3394", "#6630", "#5120"
   ];
 
   return (

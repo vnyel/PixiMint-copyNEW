@@ -10,7 +10,8 @@ import MiniNftCarousel from "@/components/MiniNftCarousel";
 import AuthPageStats from "@/components/AuthPageStats";
 
 const featuredNftNames = [
-  "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114"
+  "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
+  "#6321", "#654", "#9028", "#7766", "#2971", "#3394", "#6630", "#5120"
 ];
 
 const Register = () => {
