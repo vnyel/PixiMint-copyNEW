@@ -22,6 +22,24 @@ import {
 
 const ITEMS_PER_PAGE = 30; // Define how many NFTs to show per page
 
+// Fisher-Yates (Knuth) shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+};
+
 const MarketplacePage = () => {
   const [listedNfts, setListedNfts] = useState<NFT[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
@@ -43,29 +61,8 @@ const MarketplacePage = () => {
   const fetchMarketplaceNfts = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch all relevant listings with NFT rarity for accurate client-side counting
-      const { data: allListingsWithRarity, error: countError } = await supabase
-        .from('marketplace_listings')
-        .select(`id, nfts!inner(rarity)`)
-        .eq('is_listed', true);
-
-      if (countError) {
-        showError(`Failed to fetch total NFT count: ${countError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      let filteredCount = allListingsWithRarity.length;
-      if (filterRarity && filterRarity !== 'all') {
-        filteredCount = allListingsWithRarity.filter(item => item.nfts?.rarity === filterRarity).length;
-      }
-      setTotalNftsCount(filteredCount);
-
-      // Calculate the range for the current page
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      let query = supabase
+      // Base query for counting and fetching
+      let baseQuery = supabase
         .from('marketplace_listings')
         .select(`
           *,
@@ -73,23 +70,45 @@ const MarketplacePage = () => {
             id, creator_id, owner_id, name, image_url, rarity, price_sol, rarity_color, created_at, likes_count,
             nft_likes(user_id)
           )
-        `)
+        `, { count: 'exact' }) // Request count for pagination
         .eq('is_listed', true);
 
       // Apply rarity filter
       if (filterRarity && filterRarity !== 'all') {
-        query = query.eq('nfts.rarity', filterRarity);
+        baseQuery = baseQuery.eq('nfts.rarity', filterRarity);
       }
+
+      // Apply search term filter
+      if (searchTerm.trim() !== "") {
+        baseQuery = baseQuery.ilike('nfts.name', `%${searchTerm.trim()}%`);
+      }
+
+      // Fetch total count first
+      const { count, error: countError } = await baseQuery.limit(0); // Fetch 0 rows, just get the count
+
+      if (countError) {
+        showError(`Failed to fetch total NFT count: ${countError.message}`);
+        setLoading(false);
+        return;
+      }
+      setTotalNftsCount(count || 0);
+
+      // Calculate the range for the current page
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      // Clone the base query for fetching paginated data
+      let paginatedQuery = baseQuery;
 
       // Apply server-side sorting for non-random/non-rarity fields
       if (sortBy !== 'random' && sortBy !== 'rarity') {
-        query = query.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
+        paginatedQuery = paginatedQuery.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
       }
 
       // Apply pagination range
-      query = query.range(from, to);
+      paginatedQuery = paginatedQuery.range(from, to);
 
-      const { data: listingsData, error: listingsError } = await query;
+      const { data: listingsData, error: listingsError } = await paginatedQuery;
 
       if (listingsError) {
         showError(`Failed to fetch marketplace listings: ${listingsError.message}`);
@@ -155,7 +174,7 @@ const MarketplacePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortBy, sortOrder, filterRarity, currentPage]); // Add currentPage to dependencies
+  }, [sortBy, sortOrder, filterRarity, currentPage, searchTerm]); // Add searchTerm to dependencies
 
   useEffect(() => {
     fetchMarketplaceNfts();
@@ -182,10 +201,8 @@ const MarketplacePage = () => {
     fetchMarketplaceNfts(); // Refresh the list after a sale
   };
 
-  const filteredNfts = listedNfts.filter(nft =>
-    nft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    nft.list_price_sol?.toString().includes(searchTerm)
-  );
+  // No longer need client-side filtering by searchTerm here, as it's done in fetchMarketplaceNfts
+  const displayedNfts = listedNfts;
 
   const totalPages = Math.ceil(totalNftsCount / ITEMS_PER_PAGE);
 
@@ -272,10 +289,16 @@ const MarketplacePage = () => {
               type="text"
               placeholder="Search by # or price..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
               className="border border-input rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-sans shadow-sm"
             />
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(value) => {
+              setSortBy(value);
+              setCurrentPage(1); // Reset to first page on sort change
+            }}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
@@ -286,7 +309,10 @@ const MarketplacePage = () => {
                 <SelectItem value="rarity">Rarity</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortOrder} onValueChange={setSortOrder} disabled={sortBy === 'random'}>
+            <Select value={sortOrder} onValueChange={(value) => {
+              setSortOrder(value);
+              setCurrentPage(1); // Reset to first page on order change
+            }} disabled={sortBy === 'random'}>
               <SelectTrigger className="w-full sm:w-[150px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Order" />
               </SelectTrigger>
@@ -295,7 +321,10 @@ const MarketplacePage = () => {
                 <SelectItem value="asc">Ascending</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterRarity} onValueChange={setFilterRarity}>
+            <Select value={filterRarity} onValueChange={(value) => {
+              setFilterRarity(value);
+              setCurrentPage(1); // Reset to first page on filter change
+            }}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Filter by Rarity" />
               </SelectTrigger>
@@ -314,13 +343,13 @@ const MarketplacePage = () => {
             <div className="flex justify-center items-center h-48">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filteredNfts.length === 0 ? (
+          ) : displayedNfts.length === 0 ? (
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
               No NFTs currently listed for sale.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredNfts.map((nft) => (
+              {displayedNfts.map((nft) => (
                 <MarketplaceNftCard
                   key={nft.listing_id} // Use listing_id as key for marketplace cards
                   nft={nft}
