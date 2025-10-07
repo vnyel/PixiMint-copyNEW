@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import PixiMintConcept from "@/components/PixiMintConcept";
 import NftCarousel from "@/components/NftCarousel";
+import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
 
 
 const HomePage = () => {
@@ -24,6 +25,8 @@ const HomePage = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
 
+  // Placeholder Contract Address
+  const placeholderContractAddress = "0xAbc123Def456Ghi789Jkl012Mno345Pqr678Stu901";
 
   const fetchStats = async () => {
     setLoadingStats(true);
@@ -80,9 +83,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-home-image text-foreground font-sans">
       <Header />
-      <main className="flex-grow flex flex-col items-center p-4 md:p-8 relative"> {/* Added relative positioning */}
-        
-
+      <main className="flex-grow flex flex-col items-center p-4 md:p-8 relative">
         {/* NFT Carousel Hero Section */}
         <section className="w-full max-w-6xl mx-auto mb-12">
           <h2 className="text-5xl md:text-7xl font-pixel mb-6 leading-tight text-center text-primary animate-pulse-text">
@@ -158,7 +159,7 @@ const HomePage = () => {
         </section>
 
         {/* Navigation Buttons */}
-        <section className="w-full max-w-4xl flex flex-col sm:flex-row justify-center gap-6 mb-12">
+        <section className="w-full max-w-4xl flex flex-col sm:flex-row justify-center gap-6 mb-6"> {/* Reduced mb to make space */}
           <Button
             onClick={() => navigate("/gallery")}
             className="flex-1 bg-mint-green text-black border border-mint-green rounded-lg hover:bg-mint-green/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-lg py-4 px-6 flex items-center justify-center gap-2"
@@ -166,6 +167,11 @@ const HomePage = () => {
             <GalleryVertical className="h-5 w-5" /> View Gallery
           </Button>
         </section>
+
+        {/* Contract Address Card */}
+        <div className="w-full max-w-4xl mb-12"> {/* Added margin-bottom for spacing */}
+          <ContractAddressCard contractAddress={placeholderContractAddress} />
+        </div>
 
         {/* PixiMint Concept Explanation */}
         <PixiMintConcept />
