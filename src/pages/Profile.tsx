@@ -413,41 +413,43 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
                 You don't own any NFTs yet. Mint one or buy from the marketplace!
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userOwnedNfts.map((nft) => (
-                  <div key={nft.id} className="relative">
-                    <NftCard
-                      nft={nft}
-                      creatorUsername={profile.username} // Display original minter's username
-                      creatorIsVerified={profile.is_verified}
-                      creatorProfile={profile}
-                      solanaPrice={solanaPrice}
-                      onLikeToggle={handleLikeToggle}
-                    />
-                    {nft.is_listed ? (
-                      <div className="absolute top-6 right-6 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
-                        <Store className="h-3 w-3" /> Listed for {nft.list_price_sol} SOL
-                        {isOwner && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-0 ml-2 text-white hover:text-gray-200"
-                            onClick={() => nft.listing_id && handleDelistNft(nft.listing_id)}
-                            disabled={loading}
-                          >
-                            (Delist)
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      isOwner && (
-                        <div className="absolute top-6 right-6 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
-                          Not Listed
+              <div className="bg-[#00ffa3] p-6 rounded-lg shadow-xl"> {/* New background card */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {userOwnedNfts.map((nft) => (
+                    <div key={nft.id} className="relative">
+                      <NftCard
+                        nft={nft}
+                        creatorUsername={profile.username} // Display original minter's username
+                        creatorIsVerified={profile.is_verified}
+                        creatorProfile={profile}
+                        solanaPrice={solanaPrice}
+                        onLikeToggle={handleLikeToggle}
+                      />
+                      {nft.is_listed ? (
+                        <div className="absolute top-6 right-6 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
+                          <Store className="h-3 w-3" /> Listed for {nft.list_price_sol} SOL
+                          {isOwner && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto p-0 ml-2 text-white hover:text-gray-200"
+                              onClick={() => nft.listing_id && handleDelistNft(nft.listing_id)}
+                              disabled={loading}
+                            >
+                              (Delist)
+                            </Button>
+                          )}
                         </div>
-                      )
-                    )}
-                  </div>
-                ))}
+                      ) : (
+                        isOwner && (
+                          <div className="absolute top-6 right-6 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                            Not Listed
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -456,18 +458,20 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
         {!isOwner && userOwnedNfts.length > 0 && (
           <div className="w-full max-w-4xl mt-8">
             <h3 className="text-3xl font-pixel text-primary mb-6 text-center">NFTs Owned by @{profile.username}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userOwnedNfts.map((nft) => (
-                <NftCard
-                  key={nft.id}
-                  nft={nft}
-                  creatorUsername={profile.username}
-                  creatorIsVerified={profile.is_verified}
-                  creatorProfile={profile}
-                  solanaPrice={solanaPrice}
-                  onLikeToggle={handleLikeToggle}
-                />
-              ))}
+            <div className="bg-[#00ffa3] p-6 rounded-lg shadow-xl"> {/* New background card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userOwnedNfts.map((nft) => (
+                  <NftCard
+                    key={nft.id}
+                    nft={nft}
+                    creatorUsername={profile.username}
+                    creatorIsVerified={profile.is_verified}
+                    creatorProfile={profile}
+                    solanaPrice={solanaPrice}
+                    onLikeToggle={handleLikeToggle}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
