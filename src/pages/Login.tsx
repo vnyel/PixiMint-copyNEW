@@ -37,9 +37,14 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full max-w-6xl">
-        {/* AuthPageStats - now in the first column */}
-        <div className="hidden lg:flex justify-end self-start"> {/* Changed justify-center to justify-end */}
+        {/* AuthPageStats and new promotional card - now in the first column */}
+        <div className="hidden lg:flex flex-col justify-end self-start space-y-4"> {/* Added flex-col and space-y-4 */}
           <AuthPageStats />
+          <Card className="bg-card/80 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-full text-card-foreground font-sans text-center">
+            <CardContent className="p-0">
+              <p className="text-lg font-bold text-primary">5 free mints for every new user!</p>
+            </CardContent>
+          </Card>
         </div>
         
         {/* Login/Register Card - this will be in the middle column */}
