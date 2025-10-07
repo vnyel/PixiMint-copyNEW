@@ -52,7 +52,7 @@ const MarketplacePage = () => {
   }, [profiles]);
 
   const fetchMarketplaceNfts = useCallback(async (reset = false) => {
-    if ((loadingMore && !reset) || (loadingInitial && !reset) || !hasMore && !reset) return;
+    if ((loadingMore && !reset) || (!hasMore && !reset)) return; // Prevent fetching if already loading or no more items
 
     if (reset) {
       setLoadingInitial(true);
@@ -169,12 +169,14 @@ const MarketplacePage = () => {
       setLoadingInitial(false);
       setLoadingMore(false);
     }
-  }, [page, sortBy, sortOrder, filterRarity, searchTerm, loadingMore, loadingInitial, hasMore]);
+  }, [page, sortBy, sortOrder, filterRarity, searchTerm, loadingMore, hasMore]); // Removed loadingInitial from dependencies to prevent re-triggering on initial load
 
   // Initial fetch and re-fetch on filter/sort/search change
   useEffect(() => {
+    setPage(0); // Reset page when filters/sorts change
+    setHasMore(true); // Assume there's more data when filters/sorts change
     fetchMarketplaceNfts(true); // Pass true to reset and fetch from page 0
-  }, [fetchMarketplaceNfts, sortBy, sortOrder, filterRarity, searchTerm]);
+  }, [sortBy, sortOrder, filterRarity, searchTerm]); // Only these should trigger a full reset and re-fetch
 
   // Intersection Observer for infinite scrolling
   useEffect(() => {
@@ -270,14 +272,14 @@ const MarketplacePage = () => {
             </Select>
           </div>
 
-          {loadingInitial ? (
+          {loadingInitial && listedNfts.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
               <p className="text-lg text-muted-foreground mb-2 font-sans">
                 Fetching NFT Security Fingerprints from PixiChain Network
               </p>
             </div>
-          ) : listedNfts.length === 0 && !hasMore ? ( // Only show "No NFTs" if no NFTs loaded AND no more to load
+          ) : listedNfts.length === 0 && !hasMore && !loadingInitial ? ( // Only show "No NFTs" if no NFTs loaded AND no more to load
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
               No NFTs currently listed for sale.
             </div>
