@@ -37,7 +37,7 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full max-w-6xl">
         {/* AuthPageStats - now in the first column */}
-        <div className="hidden lg:flex justify-center self-start">
+        <div className="hidden lg:flex justify-end self-start"> {/* Changed justify-center to justify-end */}
           <AuthPageStats />
         </div>
         
