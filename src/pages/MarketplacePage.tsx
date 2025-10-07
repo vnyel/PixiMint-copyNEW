@@ -11,8 +11,6 @@ import { Loader2 } from "lucide-react";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import MarketplaceNftCard from "@/components/MarketplaceNftCard";
 
-const ITEMS_PER_BATCH = 20; // Define how many NFTs to load in each batch for infinite scroll
-
 // Fisher-Yates (Knuth) shuffle algorithm
 const shuffleArray = (array: any[]) => {
   let currentIndex = array.length, randomIndex;
@@ -34,45 +32,25 @@ const shuffleArray = (array: any[]) => {
 const MarketplacePage = () => {
   const [listedNfts, setListedNfts] = useState<NFT[]>([]);
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
-  const [loadingInitial, setLoadingInitial] = useState(true); // For the very first load
-  const [loadingMore, setLoadingMore] = useState(false); // For subsequent loads in infinite scroll
-  const [hasMore, setHasMore] = useState(true); // To know if there are more NFTs to load (for paginated sorts)
-  const [page, setPage] = useState(0); // Current page/offset for fetching (for paginated sorts)
+  const [loading, setLoading] = useState(true); // Single loading state
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("random"); // Default to random
   const [sortOrder, setSortOrder] = useState("desc");
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
 
-  const observerTarget = useRef<HTMLDivElement>(null);
   const profilesRef = useRef(profiles); // Keep a ref for profiles to use in real-time updates
   useEffect(() => {
     profilesRef.current = profiles;
   }, [profiles]);
 
   const fetchMarketplaceNfts = useCallback(async () => {
-    const isFullFetchMode = sortBy === 'random' || sortBy === 'rarity';
-
-    // Prevent fetching if already loading, or if no more items for paginated modes
-    if (loadingMore && !loadingInitial) return; // Prevent concurrent fetches
-    if (!isFullFetchMode && !hasMore && listedNfts.length > 0 && !loadingInitial) return;
-
-    // Determine if this is an initial load or a reset (page 0)
-    const isReset = page === 0;
-
-    if (isReset) {
-      setLoadingInitial(true);
-      setListedNfts([]); // Clear previous NFTs
-      setProfiles(new Map()); // Clear previous profiles
-      setHasMore(true); // Assume there's more data for a new fetch
-    } else {
-      setLoadingMore(true);
-    }
-
-    const currentOffset = page * ITEMS_PER_BATCH;
+    setLoading(true);
+    setListedNfts([]); // Clear previous NFTs
+    setProfiles(new Map()); // Clear previous profiles
 
     try {
-      let baseQuery = supabase
+      let query = supabase
         .from('marketplace_listings')
         .select(`
           *,
@@ -80,45 +58,28 @@ const MarketplacePage = () => {
             id, creator_id, owner_id, name, image_url, rarity, price_sol, rarity_color, created_at, likes_count,
             nft_likes(user_id)
           )
-        `, { count: 'exact' })
+        `) // Removed count: 'exact' as we're fetching all
         .eq('is_listed', true);
 
-      // Apply filters
+      // Apply rarity filter
       if (filterRarity && filterRarity !== 'all') {
-        baseQuery = baseQuery.eq('nfts.rarity', filterRarity);
+        query = query.eq('nfts.rarity', filterRarity);
       }
+
+      // Apply search term filter
       if (searchTerm.trim() !== "") {
-        baseQuery = baseQuery.ilike('nfts.name', `%${searchTerm.trim()}%`);
+        query = query.ilike('nfts.name', `%${searchTerm.trim()}%`);
       }
 
-      let listingsData: any[] | null = null;
-      let totalCount: number | null = null;
-      let listingsError: any = null;
-
-      if (isFullFetchMode) {
-        // Fetch ALL for random/rarity to ensure global sort
-        const { data, error, count } = await baseQuery;
-        listingsData = data;
-        listingsError = error;
-        totalCount = count;
-      } else {
-        // Paginated fetch for listed_at/price_sol
-        let paginatedQuery = baseQuery.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
-        paginatedQuery = paginatedQuery.range(currentOffset, currentOffset + ITEMS_PER_BATCH - 1);
-
-        const { data, error, count } = await paginatedQuery;
-        listingsData = data;
-        listingsError = error;
-        totalCount = count;
-      }
+      // Fetch all matching listings
+      const { data: listingsData, error: listingsError } = await query;
 
       if (listingsError) {
         showError(`Failed to fetch marketplace listings: ${listingsError.message}`);
-        setHasMore(false);
         return;
       }
 
-      let newNfts: NFT[] = (listingsData || []).map((listing: any) => ({
+      let fetchedNfts: NFT[] = (listingsData || []).map((listing: any) => ({
         ...listing.nfts,
         listing_id: listing.id,
         list_price_sol: listing.list_price_sol,
@@ -127,99 +88,69 @@ const MarketplacePage = () => {
         is_liked_by_current_user: listing.nfts.nft_likes.some((like: { user_id: string }) => like.user_id === supabase.auth.getUser()?.id),
       }));
 
-      // Apply client-side sorting for 'random' and 'rarity' AFTER all data is fetched (if full fetch)
-      if (isFullFetchMode) {
-        if (sortBy === 'random') {
-          newNfts = shuffleArray(newNfts);
-        } else if (sortBy === 'rarity') {
-          const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
-          newNfts.sort((a, b) => {
-            const indexA = rarityOrder.indexOf(a.rarity);
-            const indexB = rarityOrder.indexOf(b.rarity);
-            if (sortOrder === 'asc') {
-              return indexA - indexB;
-            } else {
-              return indexB - indexA;
-            }
-          });
-        }
-        setListedNfts(newNfts); // Set all at once
-        setHasMore(false); // No more to load for full fetch
-      } else {
-        // For paginated sorts, append
-        setListedNfts(prevNfts => [...prevNfts, ...newNfts]);
-        setPage(prevPage => prevPage + 1);
-        setHasMore(totalCount ? (currentOffset + ITEMS_PER_BATCH < totalCount) : false);
+      // Apply client-side sorting/shuffling to the entire fetched dataset
+      if (sortBy === 'random') {
+        fetchedNfts = shuffleArray(fetchedNfts);
+      } else if (sortBy === 'rarity') {
+        const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+        fetchedNfts.sort((a, b) => {
+          const indexA = rarityOrder.indexOf(a.rarity);
+          const indexB = rarityOrder.indexOf(b.rarity);
+          if (sortOrder === 'asc') {
+            return indexA - indexB;
+          } else {
+            return indexB - indexA;
+          }
+        });
+      } else if (sortBy === 'listed_at') {
+        fetchedNfts.sort((a, b) => {
+          const dateA = new Date(a.listed_at || 0).getTime();
+          const dateB = new Date(b.listed_at || 0).getTime();
+          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+      } else if (sortBy === 'price_sol') {
+        fetchedNfts.sort((a, b) => {
+          const priceA = a.list_price_sol || 0;
+          const priceB = b.list_price_sol || 0;
+          return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+        });
       }
+
+      setListedNfts(fetchedNfts);
 
       // Collect seller IDs for profile fetching
       const uniqueSellerIds = new Set<string>();
-      newNfts.forEach(nft => uniqueSellerIds.add(nft.seller_id || ''));
+      fetchedNfts.forEach(nft => uniqueSellerIds.add(nft.seller_id || ''));
       
-      // Fetch profiles for new sellers
+      // Fetch profiles for all sellers
       if (uniqueSellerIds.size > 0) {
-        const existingProfileIds = Array.from(profilesRef.current.keys());
-        const newSellerIdsToFetch = Array.from(uniqueSellerIds).filter(id => id && !existingProfileIds.includes(id));
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', Array.from(uniqueSellerIds));
 
-        if (newSellerIdsToFetch.length > 0) {
-          const { data: newProfilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', newSellerIdsToFetch);
-
-          if (profilesError) {
-            console.error("Failed to fetch new profiles:", profilesError.message);
-          } else {
-            setProfiles(prevProfiles => {
-              const updatedMap = new Map(prevProfiles);
-              newProfilesData?.forEach(profile => updatedMap.set(profile.id, profile as Profile));
-              return updatedMap;
-            });
-          }
+        if (profilesError) {
+          console.error("Failed to fetch profiles:", profilesError.message);
+        } else {
+          setProfiles(prevProfiles => {
+            const updatedMap = new Map(prevProfiles);
+            profilesData?.forEach(profile => updatedMap.set(profile.id, profile as Profile));
+            return updatedMap;
+          });
         }
       }
 
     } catch (error: any) {
       showError(`An unexpected error occurred while fetching marketplace NFTs: ${error.message}`);
-      setHasMore(false);
     } finally {
-      setLoadingInitial(false);
-      setLoadingMore(false);
+      setLoading(false);
     }
-  }, [page, sortBy, sortOrder, filterRarity, searchTerm, hasMore, loadingMore, loadingInitial, listedNfts.length]);
+  }, [sortBy, sortOrder, filterRarity, searchTerm]);
 
-// Effect to reset page and trigger a new fetch when filters/sorts/search change
-useEffect(() => {
-  setPage(0); // Reset page to 0
-  // The fetchMarketplaceNfts will be called by the page dependency change in the next useEffect
-}, [sortBy, sortOrder, filterRarity, searchTerm]);
-
-// Effect to trigger fetch when page changes (including the reset to 0)
-useEffect(() => {
-  fetchMarketplaceNfts();
-}, [fetchMarketplaceNfts, page]);
-
-  // Intersection Observer for infinite scrolling (only active for paginated sorts)
+  // Effect to trigger a full fetch when filters/sorts/search change
   useEffect(() => {
-    const isFullFetchMode = sortBy === 'random' || sortBy === 'rarity';
-    if (isFullFetchMode) return; // Disable observer for full fetch modes
-
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loadingMore && !loadingInitial) {
-        setPage(prevPage => prevPage + 1); // Increment page to trigger next batch fetch
-      }
-    }, { threshold: 1.0 }); // Trigger when the target is fully visible
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [hasMore, loadingMore, loadingInitial, sortBy]); // sortBy is a dependency to re-evaluate if observer should be active
+    fetchMarketplaceNfts();
+  }, [sortBy, sortOrder, filterRarity, searchTerm, fetchMarketplaceNfts]);
 
   // Real-time updates
   useEffect(() => {
@@ -227,27 +158,22 @@ useEffect(() => {
       .channel('marketplace_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_listings' }, payload => {
         console.log("Marketplace real-time update:", payload);
-        setPage(0); // Reset page to 0 to trigger a full re-fetch
-        setHasMore(true);
+        fetchMarketplaceNfts(); // Re-fetch all listings on any change
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'nfts' }, payload => {
         console.log("NFT ownership update:", payload);
-        setPage(0); // Reset page to 0 to trigger a full re-fetch
-        setHasMore(true);
+        fetchMarketplaceNfts(); // Re-fetch all listings on any change
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []); // No dependencies, runs once on mount
+  }, [fetchMarketplaceNfts]);
 
   const handleNftSold = () => {
-    setPage(0); // Reset page to 0 to trigger a full re-fetch
-    setHasMore(true);
+    fetchMarketplaceNfts(); // Refresh the list after a sale
   };
-
-  const isFullFetchMode = sortBy === 'random' || sortBy === 'rarity';
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -290,7 +216,7 @@ useEffect(() => {
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Filter by Rarity" />
               </SelectTrigger>
-            <SelectContent className="font-sans border border-border rounded-lg shadow-md">
+              <SelectContent className="font-sans border border-border rounded-lg shadow-md">
                 <SelectItem value="all">All Rarity</SelectItem>
                 <SelectItem value="Common">Common</SelectItem>
                 <SelectItem value="Uncommon">Uncommon</SelectItem>
@@ -301,14 +227,14 @@ useEffect(() => {
             </Select>
           </div>
 
-          {loadingInitial && listedNfts.length === 0 ? (
+          {loading && listedNfts.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
               <p className="text-lg text-muted-foreground mb-2 font-sans">
                 Fetching NFT Security Fingerprints from PixiChain Network
               </p>
             </div>
-          ) : listedNfts.length === 0 && !hasMore && !loadingInitial ? ( // Only show "No NFTs" if no NFTs loaded AND no more to load
+          ) : listedNfts.length === 0 && !loading ? ( // Only show "No NFTs" if no NFTs loaded AND not currently loading
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
               No NFTs currently listed for sale.
             </div>
@@ -323,18 +249,6 @@ useEffect(() => {
                   onNftSold={handleNftSold}
                 />
               ))}
-            </div>
-          )}
-
-          {/* Intersection Observer target for infinite scroll */}
-          {!isFullFetchMode && (
-            <div ref={observerTarget} className="py-4 flex justify-center">
-              {loadingMore && hasMore && (
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              )}
-              {!hasMore && listedNfts.length > 0 && !loadingMore && (
-                <p className="text-muted-foreground text-sm font-sans">You've reached the end of the listings!</p>
-              )}
             </div>
           )}
         </div>
