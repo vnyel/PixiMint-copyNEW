@@ -113,7 +113,7 @@ const NftCarousel = ({ nftNames }: NftCarouselProps) => {
         }}
         plugins={[
           Autoplay({
-            delay: 1500, // Advance every 1.5 seconds
+            delay: 3000, // Advance every 3 seconds
             stopOnInteraction: false, // Keep playing even if user interacts
           }),
         ]}
