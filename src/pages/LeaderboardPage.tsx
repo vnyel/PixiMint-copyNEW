@@ -9,7 +9,7 @@ const LeaderboardPage = () => {
       <Header />
       <main className="flex-grow flex flex-col items-center p-8">
         <h2 className="text-5xl font-pixel text-primary mb-12 text-center tracking-tight">
-          PixiMint Leaderboard
+          Top 10 Leaderboard
         </h2>
         <LeaderboardTable />
       </main>
