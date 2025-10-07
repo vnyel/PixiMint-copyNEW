@@ -10,17 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import MarketplaceNftCard from "@/components/MarketplaceNftCard";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
 
-const ITEMS_PER_PAGE = 30; // Define how many NFTs to show per page
+const ITEMS_PER_LOAD = 30; // Define how many NFTs to load per scroll
 
 // Fisher-Yates (Knuth) shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -50,19 +41,22 @@ const MarketplacePage = () => {
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalNftsCount, setTotalNftsCount] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement>(null); // Ref for the infinite scroll loader
 
   const profilesRef = useRef(profiles);
   useEffect(() => {
     profilesRef.current = profiles;
   }, [profiles]);
 
-  const fetchMarketplaceNfts = useCallback(async () => {
+  const fetchMarketplaceNfts = useCallback(async (reset = false) => {
+    if (!hasMore && !reset) return; // Don't fetch if no more items and not resetting
+    if (loading && !reset) return; // Prevent multiple fetches while one is in progress
+
     setLoading(true);
     try {
-      // Base query for counting and fetching
-      let baseQuery = supabase
+      let query = supabase
         .from('marketplace_listings')
         .select(`
           *,
@@ -70,45 +64,28 @@ const MarketplacePage = () => {
             id, creator_id, owner_id, name, image_url, rarity, price_sol, rarity_color, created_at, likes_count,
             nft_likes(user_id)
           )
-        `, { count: 'exact' }) // Request count for pagination
+        `)
         .eq('is_listed', true);
 
       // Apply rarity filter
       if (filterRarity && filterRarity !== 'all') {
-        baseQuery = baseQuery.eq('nfts.rarity', filterRarity);
+        query = query.eq('nfts.rarity', filterRarity);
       }
 
       // Apply search term filter
       if (searchTerm.trim() !== "") {
-        baseQuery = baseQuery.ilike('nfts.name', `%${searchTerm.trim()}%`);
+        query = query.ilike('nfts.name', `%${searchTerm.trim()}%`);
       }
-
-      // Fetch total count first
-      const { count, error: countError } = await baseQuery.limit(0); // Fetch 0 rows, just get the count
-
-      if (countError) {
-        showError(`Failed to fetch total NFT count: ${countError.message}`);
-        setLoading(false);
-        return;
-      }
-      setTotalNftsCount(count || 0);
-
-      // Calculate the range for the current page
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      // Clone the base query for fetching paginated data
-      let paginatedQuery = baseQuery;
 
       // Apply server-side sorting for non-random/non-rarity fields
       if (sortBy !== 'random' && sortBy !== 'rarity') {
-        paginatedQuery = paginatedQuery.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
+        query = query.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
       }
 
-      // Apply pagination range
-      paginatedQuery = paginatedQuery.range(from, to);
+      // Apply limit and offset for infinite scroll
+      query = query.range(reset ? 0 : offset, (reset ? 0 : offset) + ITEMS_PER_LOAD - 1);
 
-      const { data: listingsData, error: listingsError } = await paginatedQuery;
+      const { data: listingsData, error: listingsError } = await query;
 
       if (listingsError) {
         showError(`Failed to fetch marketplace listings: ${listingsError.message}`);
@@ -141,12 +118,13 @@ const MarketplacePage = () => {
         });
       }
 
-      setListedNfts(processedNfts);
+      setListedNfts(prevNfts => reset ? processedNfts : [...prevNfts, ...processedNfts]);
+      setOffset(prevOffset => prevOffset + processedNfts.length);
+      setHasMore(processedNfts.length === ITEMS_PER_LOAD);
 
       const sellerIds = Array.from(new Set(listingsData?.map(listing => listing.seller_id)));
       const ownerIds = Array.from(new Set(processedNfts?.map(nft => nft.owner_id)));
       const allUserIds = Array.from(new Set([...sellerIds, ...ownerIds]));
-
 
       if (allUserIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
@@ -164,31 +142,41 @@ const MarketplacePage = () => {
         profilesData?.forEach(profile => {
           profilesMap.set(profile.id, profile as Profile);
         });
-        setProfiles(profilesMap);
-      } else {
-        setProfiles(new Map());
+        setProfiles(prevProfiles => new Map([...prevProfiles, ...profilesMap]));
       }
 
     } catch (error: any) {
-      showError(`An unexpected error occurred: ${error.message}`);
+      showError(`An unexpected error occurred while fetching marketplace NFTs: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  }, [sortBy, sortOrder, filterRarity, currentPage, searchTerm]); // Add searchTerm to dependencies
+  }, [offset, hasMore, loading, sortBy, sortOrder, filterRarity, searchTerm]);
 
+  // Initial fetch and reset on filter/sort/search change
   useEffect(() => {
-    fetchMarketplaceNfts();
+    setListedNfts([]);
+    setOffset(0);
+    setHasMore(true);
+    fetchMarketplaceNfts(true); // Perform an initial fetch with reset
+  }, [sortBy, sortOrder, filterRarity, searchTerm]);
 
+  // Real-time updates
+  useEffect(() => {
     const channel = supabase
       .channel('marketplace_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_listings' }, payload => {
         console.log("Marketplace real-time update:", payload);
-        fetchMarketplaceNfts(); // Re-fetch all listings on any change
+        setListedNfts([]); // Clear existing NFTs
+        setOffset(0); // Reset offset
+        setHasMore(true); // Assume there's more data
+        fetchMarketplaceNfts(true); // Re-fetch all listings from start
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'nfts' }, payload => {
-        // Listen for NFT ownership changes to update the cards if needed
         console.log("NFT ownership update:", payload);
-        fetchMarketplaceNfts();
+        setListedNfts([]); // Clear existing NFTs
+        setOffset(0); // Reset offset
+        setHasMore(true); // Assume there's more data
+        fetchMarketplaceNfts(true); // Re-fetch all listings from start
       })
       .subscribe();
 
@@ -197,83 +185,34 @@ const MarketplacePage = () => {
     };
   }, [fetchMarketplaceNfts]);
 
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchMarketplaceNfts();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, loading, fetchMarketplaceNfts]);
+
   const handleNftSold = () => {
-    fetchMarketplaceNfts(); // Refresh the list after a sale
+    setListedNfts([]); // Clear existing NFTs
+    setOffset(0); // Reset offset
+    setHasMore(true); // Assume there's more data
+    fetchMarketplaceNfts(true); // Re-fetch all listings from start
   };
-
-  // No longer need client-side filtering by searchTerm here, as it's done in fetchMarketplaceNfts
-  const displayedNfts = listedNfts;
-
-  const totalPages = Math.ceil(totalNftsCount / ITEMS_PER_PAGE);
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on page change
-    }
-  };
-
-  const renderPaginationItems = () => {
-    const items = [];
-    const maxPageButtons = 5; // Max number of page buttons to show
-
-    if (totalPages <= maxPageButtons) {
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink onClick={() => handlePageChange(i)} isActive={currentPage === i}>
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      }
-    } else {
-      items.push(
-        <PaginationItem key={1}>
-          <PaginationLink onClick={() => handlePageChange(1)} isActive={currentPage === 1}>
-            1
-          </PaginationLink>
-        </PaginationItem>
-      );
-
-      if (currentPage > 2) {
-        items.push(<PaginationEllipsis key="ellipsis-start" />);
-      }
-
-      let startPage = Math.max(2, currentPage - Math.floor(maxPageButtons / 2) + 1);
-      let endPage = Math.min(totalPages - 1, currentPage + Math.floor(maxPageButtons / 2) - 1);
-
-      if (currentPage <= Math.floor(maxPageButtons / 2)) {
-        endPage = maxPageButtons - 1;
-      } else if (currentPage > totalPages - Math.floor(maxPageButtons / 2)) {
-        startPage = totalPages - maxPageButtons + 2;
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        items.push(
-          <PaginationItem key={i}>
-            <PaginationLink onClick={() => handlePageChange(i)} isActive={currentPage === i}>
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      }
-
-      if (currentPage < totalPages - 1) {
-        items.push(<PaginationEllipsis key="ellipsis-end" />);
-      }
-
-      items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink onClick={() => handlePageChange(totalPages)} isActive={currentPage === totalPages}>
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    return items;
-  };
-
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
@@ -289,16 +228,10 @@ const MarketplacePage = () => {
               type="text"
               placeholder="Search by # or price..."
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on search
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="border border-input rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-sans shadow-sm"
             />
-            <Select value={sortBy} onValueChange={(value) => {
-              setSortBy(value);
-              setCurrentPage(1); // Reset to first page on sort change
-            }}>
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
@@ -309,10 +242,7 @@ const MarketplacePage = () => {
                 <SelectItem value="rarity">Rarity</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortOrder} onValueChange={(value) => {
-              setSortOrder(value);
-              setCurrentPage(1); // Reset to first page on order change
-            }} disabled={sortBy === 'random'}>
+            <Select value={sortOrder} onValueChange={setSortOrder} disabled={sortBy === 'random'}>
               <SelectTrigger className="w-full sm:w-[150px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Order" />
               </SelectTrigger>
@@ -321,10 +251,7 @@ const MarketplacePage = () => {
                 <SelectItem value="asc">Ascending</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterRarity} onValueChange={(value) => {
-              setFilterRarity(value);
-              setCurrentPage(1); // Reset to first page on filter change
-            }}>
+            <Select value={filterRarity} onValueChange={setFilterRarity}>
               <SelectTrigger className="w-full sm:w-[180px] border border-input rounded-lg font-sans shadow-sm">
                 <SelectValue placeholder="Filter by Rarity" />
               </SelectTrigger>
@@ -339,17 +266,13 @@ const MarketplacePage = () => {
             </Select>
           </div>
 
-          {loading || solanaPriceLoading ? (
-            <div className="flex justify-center items-center h-48">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : displayedNfts.length === 0 ? (
+          {listedNfts.length === 0 && !loading ? (
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
               No NFTs currently listed for sale.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayedNfts.map((nft) => (
+              {listedNfts.map((nft) => (
                 <MarketplaceNftCard
                   key={nft.listing_id} // Use listing_id as key for marketplace cards
                   nft={nft}
@@ -361,25 +284,13 @@ const MarketplacePage = () => {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <Pagination className="mt-8">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  />
-                </PaginationItem>
-                {renderPaginationItems()}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
+          {/* Infinite scroll loader */}
+          <div ref={loaderRef} className="flex justify-center items-center py-8">
+            {loading && hasMore && <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />}
+            {!hasMore && listedNfts.length > 0 && !loading && (
+              <p className="text-muted-foreground text-center font-sans">You've reached the end of the listings!</p>
+            )}
+          </div>
         </div>
       </main>
       <Footer />
