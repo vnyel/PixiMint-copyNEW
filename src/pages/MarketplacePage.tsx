@@ -7,7 +7,7 @@ import { showError } from "@/utils/toast";
 import { NFT, Profile } from "@/types/nft";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowDown, ArrowUp } from "lucide-react"; // Import ArrowDown and ArrowUp
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import MarketplaceNftCard from "@/components/MarketplaceNftCard";
 
@@ -58,7 +58,7 @@ const MarketplacePage = () => {
             id, creator_id, owner_id, name, image_url, rarity, price_sol, rarity_color, created_at, likes_count,
             nft_likes(user_id)
           )
-        `) // Removed count: 'exact' as we're fetching all
+        `)
         .eq('is_listed', true);
 
       // Apply rarity filter
@@ -104,8 +104,8 @@ const MarketplacePage = () => {
         });
       } else if (sortBy === 'listed_at') {
         fetchedNfts.sort((a, b) => {
-          const dateA = new Date(a.listed_at || 0).getTime();
-          const dateB = new Date(b.listed_at || 0).getTime();
+          const dateA = new Date(a.created_at).getTime(); // Use NFT creation date for 'newest listing'
+          const dateB = new Date(b.created_at).getTime();
           return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
       } else if (sortBy === 'price_sol') {
@@ -124,19 +124,24 @@ const MarketplacePage = () => {
       
       // Fetch profiles for all sellers
       if (uniqueSellerIds.size > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', Array.from(uniqueSellerIds));
+        const existingProfileIds = Array.from(profilesRef.current.keys());
+        const newSellerIdsToFetch = Array.from(uniqueSellerIds).filter(id => id && !existingProfileIds.includes(id));
 
-        if (profilesError) {
-          console.error("Failed to fetch profiles:", profilesError.message);
-        } else {
-          setProfiles(prevProfiles => {
-            const updatedMap = new Map(prevProfiles);
-            profilesData?.forEach(profile => updatedMap.set(profile.id, profile as Profile));
-            return updatedMap;
-          });
+        if (newSellerIdsToFetch.length > 0) {
+          const { data: newProfilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', newSellerIdsToFetch);
+
+          if (profilesError) {
+            console.error("Failed to fetch new profiles:", profilesError.message);
+          } else {
+            setProfiles(prevProfiles => {
+              const updatedMap = new Map(prevProfiles);
+              newProfilesData?.forEach(profile => updatedMap.set(profile.id, profile as Profile));
+              return updatedMap;
+            });
+          }
         }
       }
 
@@ -169,7 +174,7 @@ const MarketplacePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchMarketplaceNfts]);
+  }, [fetchMarketplaceNfts]); // Dependency to ensure channel is re-subscribed if fetchMarketplaceNfts changes
 
   const handleNftSold = () => {
     fetchMarketplaceNfts(); // Refresh the list after a sale
@@ -208,8 +213,16 @@ const MarketplacePage = () => {
                 <SelectValue placeholder="Order" />
               </SelectTrigger>
               <SelectContent className="font-sans border border-border rounded-lg shadow-md">
-                <SelectItem value="desc">Descending</SelectItem>
-                <SelectItem value="asc">Ascending</SelectItem>
+                <SelectItem value="desc">
+                  <div className="flex items-center gap-2">
+                    <ArrowDown className="h-4 w-4" /> Descending
+                  </div>
+                </SelectItem>
+                <SelectItem value="asc">
+                  <div className="flex items-center gap-2">
+                    <ArrowUp className="h-4 w-4" /> Ascending
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterRarity} onValueChange={setFilterRarity}>
