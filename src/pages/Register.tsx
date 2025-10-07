@@ -41,7 +41,7 @@ const Register = () => {
         <div className="hidden lg:block"></div> 
         
         {/* Login/Register Card - this will be in the middle column */}
-        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground lg:col-span-1">
+        <Card className="w-full border border-border rounded-lg shadow-md bg-card bg-opacity-50 text-card-foreground lg:col-span-1 self-start"> {/* Added self-start */}
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-pixel text-primary mb-2">Register for PixiMint</CardTitle>
             <CardDescription className="text-muted-foreground font-sans">Create your account to start minting NFTs.</CardDescription>
@@ -90,7 +90,7 @@ const Register = () => {
         </Card>
         
         {/* MiniNftCarousel - this will be in the right column */}
-        <div className="hidden lg:flex justify-center self-start mt-10"> {/* Adjusted classes */}
+        <div className="hidden lg:flex justify-center self-start"> {/* Removed mt-10 */}
           <MiniNftCarousel nftNames={featuredNftNames} />
         </div>
       </div>
