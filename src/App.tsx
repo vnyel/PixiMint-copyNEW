@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner } from "@/components/ui/sonner"; // Keep only Sonner
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
@@ -13,7 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProfilePage from "./pages/Profile";
 import PixiTokensPage from "./pages/PixiTokensPage";
-import LeaderboardPage from "./pages/LeaderboardPage"; // Import new page
+import LeaderboardPage from "./pages/LeaderboardPage";
 import { SessionContextProvider, useSession } from "./contexts/SessionContext";
 import { SolanaWalletContextProvider } from "./contexts/SolanaWalletContext";
 import CustomCursor from "./components/CustomCursor";
@@ -145,7 +144,7 @@ const AppContent = () => {
           element={<ProfilePage openChatWithRecipient={openChatWithRecipient} />}
         />
         <Route path="/pixi-tokens" element={<PixiTokensPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} /> {/* New route */}
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
@@ -156,7 +155,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
+        {/* Removed <Toaster /> from @/components/ui/toaster */}
         <Sonner />
         <BrowserRouter>
           <SessionContextProvider>
