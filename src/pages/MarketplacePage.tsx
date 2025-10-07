@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import MarketplaceNftCard from "@/components/MarketplaceNftCard";
-
-const ITEMS_PER_LOAD = 30; // Define how many NFTs to load per scroll
+import { Progress } from "@/components/ui/progress"; // Import Progress component
 
 // Fisher-Yates (Knuth) shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -41,21 +40,45 @@ const MarketplacePage = () => {
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined);
   const { solanaPrice, solanaPriceLoading } = useSolanaPrice();
 
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement>(null); // Ref for the infinite scroll loader
+  const [totalNftsCount, setTotalNftsCount] = useState(0);
+  const [loadedNftsCount, setLoadedNftsCount] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const profilesRef = useRef(profiles);
   useEffect(() => {
     profilesRef.current = profiles;
   }, [profiles]);
 
-  const fetchMarketplaceNfts = useCallback(async (reset = false) => {
-    if (!hasMore && !reset) return; // Don't fetch if no more items and not resetting
-    if (loading && !reset) return; // Prevent multiple fetches while one is in progress
-
+  const fetchMarketplaceNfts = useCallback(async () => {
     setLoading(true);
+    setLoadedNftsCount(0);
+    setLoadingProgress(0);
+
     try {
+      // 1. Fetch total count first
+      let countQuery = supabase
+        .from('marketplace_listings')
+        .select(`id`, { count: 'exact' })
+        .eq('is_listed', true);
+
+      if (filterRarity && filterRarity !== 'all') {
+        countQuery = countQuery.eq('nfts.rarity', filterRarity);
+      }
+      if (searchTerm.trim() !== "") {
+        countQuery = countQuery.ilike('nfts.name', `%${searchTerm.trim()}%`);
+      }
+
+      const { count, error: countError } = await countQuery;
+
+      if (countError) {
+        showError(`Failed to fetch total NFT count: ${countError.message}`);
+        setLoading(false);
+        return;
+      }
+      setTotalNftsCount(count || 0);
+      setLoadingProgress(20); // Indicate initial progress after getting count
+
+      // 2. Fetch all actual NFT listings
       let query = supabase
         .from('marketplace_listings')
         .select(`
@@ -81,9 +104,6 @@ const MarketplacePage = () => {
       if (sortBy !== 'random' && sortBy !== 'rarity') {
         query = query.order(sortBy === 'listed_at' ? 'listed_at' : `nfts.${sortBy}`, { ascending: sortOrder === 'asc' });
       }
-
-      // Apply limit and offset for infinite scroll
-      query = query.range(reset ? 0 : offset, (reset ? 0 : offset) + ITEMS_PER_LOAD - 1);
 
       const { data: listingsData, error: listingsError } = await query;
 
@@ -118,10 +138,11 @@ const MarketplacePage = () => {
         });
       }
 
-      setListedNfts(prevNfts => reset ? processedNfts : [...prevNfts, ...processedNfts]);
-      setOffset(prevOffset => prevOffset + processedNfts.length);
-      setHasMore(processedNfts.length === ITEMS_PER_LOAD);
+      setListedNfts(processedNfts);
+      setLoadedNftsCount(processedNfts.length);
+      setLoadingProgress(70); // Indicate progress after fetching NFTs
 
+      // 3. Fetch profiles for all sellers
       const sellerIds = Array.from(new Set(listingsData?.map(listing => listing.seller_id)));
       const ownerIds = Array.from(new Set(processedNfts?.map(nft => nft.owner_id)));
       const allUserIds = Array.from(new Set([...sellerIds, ...ownerIds]));
@@ -142,23 +163,23 @@ const MarketplacePage = () => {
         profilesData?.forEach(profile => {
           profilesMap.set(profile.id, profile as Profile);
         });
-        setProfiles(prevProfiles => new Map([...prevProfiles, ...profilesMap]));
+        setProfiles(profilesMap);
+      } else {
+        setProfiles(new Map());
       }
+      setLoadingProgress(100); // Final progress after fetching profiles
 
     } catch (error: any) {
       showError(`An unexpected error occurred while fetching marketplace NFTs: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  }, [offset, hasMore, loading, sortBy, sortOrder, filterRarity, searchTerm]);
-
-  // Initial fetch and reset on filter/sort/search change
-  useEffect(() => {
-    setListedNfts([]);
-    setOffset(0);
-    setHasMore(true);
-    fetchMarketplaceNfts(true); // Perform an initial fetch with reset
   }, [sortBy, sortOrder, filterRarity, searchTerm]);
+
+  // Initial fetch and re-fetch on filter/sort/search change
+  useEffect(() => {
+    fetchMarketplaceNfts();
+  }, [fetchMarketplaceNfts]);
 
   // Real-time updates
   useEffect(() => {
@@ -166,17 +187,11 @@ const MarketplacePage = () => {
       .channel('marketplace_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_listings' }, payload => {
         console.log("Marketplace real-time update:", payload);
-        setListedNfts([]); // Clear existing NFTs
-        setOffset(0); // Reset offset
-        setHasMore(true); // Assume there's more data
-        fetchMarketplaceNfts(true); // Re-fetch all listings from start
+        fetchMarketplaceNfts(); // Re-fetch all listings on any change
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'nfts' }, payload => {
         console.log("NFT ownership update:", payload);
-        setListedNfts([]); // Clear existing NFTs
-        setOffset(0); // Reset offset
-        setHasMore(true); // Assume there's more data
-        fetchMarketplaceNfts(true); // Re-fetch all listings from start
+        fetchMarketplaceNfts(); // Re-fetch all listings on any change
       })
       .subscribe();
 
@@ -185,33 +200,8 @@ const MarketplacePage = () => {
     };
   }, [fetchMarketplaceNfts]);
 
-  // Infinite scroll observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchMarketplaceNfts();
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
-      }
-    };
-  }, [hasMore, loading, fetchMarketplaceNfts]);
-
   const handleNftSold = () => {
-    setListedNfts([]); // Clear existing NFTs
-    setOffset(0); // Reset offset
-    setHasMore(true); // Assume there's more data
-    fetchMarketplaceNfts(true); // Re-fetch all listings from start
+    fetchMarketplaceNfts(); // Refresh the list after a sale
   };
 
   return (
@@ -266,7 +256,15 @@ const MarketplacePage = () => {
             </Select>
           </div>
 
-          {listedNfts.length === 0 && !loading ? (
+          {loading || solanaPriceLoading ? (
+            <div className="flex flex-col justify-center items-center h-64 w-full bg-card/50 rounded-lg p-4">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground mb-2 font-sans">
+                Loading {loadedNftsCount} of {totalNftsCount} NFTs ({loadingProgress}%)
+              </p>
+              <Progress value={loadingProgress} className="w-full max-w-sm h-2" />
+            </div>
+          ) : listedNfts.length === 0 ? (
             <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
               No NFTs currently listed for sale.
             </div>
@@ -274,7 +272,7 @@ const MarketplacePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {listedNfts.map((nft) => (
                 <MarketplaceNftCard
-                  key={nft.listing_id} // Use listing_id as key for marketplace cards
+                  key={nft.listing_id}
                   nft={nft}
                   sellerProfile={profiles.get(nft.seller_id || '') || null}
                   solanaPrice={solanaPrice}
@@ -283,14 +281,6 @@ const MarketplacePage = () => {
               ))}
             </div>
           )}
-
-          {/* Infinite scroll loader */}
-          <div ref={loaderRef} className="flex justify-center items-center py-8">
-            {loading && hasMore && <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />}
-            {!hasMore && listedNfts.length > 0 && !loading && (
-              <p className="text-muted-foreground text-center font-sans">You've reached the end of the listings!</p>
-            )}
-          </div>
         </div>
       </main>
       <Footer />
