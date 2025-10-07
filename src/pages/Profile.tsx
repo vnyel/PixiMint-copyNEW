@@ -413,7 +413,7 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
                 You don't own any NFTs yet. Mint one or buy from the marketplace!
               </div>
             ) : (
-              <div className="bg-[#00ffa3] p-6 rounded-lg shadow-xl"> {/* New background card */}
+              <div className="bg-black p-6 rounded-lg shadow-xl"> {/* Changed to bg-black */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {userOwnedNfts.map((nft) => (
                     <div key={nft.id} className="relative">
@@ -458,7 +458,7 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
         {!isOwner && userOwnedNfts.length > 0 && (
           <div className="w-full max-w-4xl mt-8">
             <h3 className="text-3xl font-pixel text-primary mb-6 text-center">NFTs Owned by @{profile.username}</h3>
-            <div className="bg-[#00ffa3] p-6 rounded-lg shadow-xl"> {/* New background card */}
+            <div className="bg-black p-6 rounded-lg shadow-xl"> {/* Changed to bg-black */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userOwnedNfts.map((nft) => (
                   <NftCard
