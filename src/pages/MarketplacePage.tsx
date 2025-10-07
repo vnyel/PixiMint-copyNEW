@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, ArrowDown, ArrowUp } from "lucide-react"; // Import ArrowDown and ArrowUp
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import MarketplaceNftCard from "@/components/MarketplaceNftCard";
+import useDebounce from "@/hooks/use-debounce"; // Import useDebounce
 
 // Fisher-Yates (Knuth) shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -34,6 +35,7 @@ const MarketplacePage = () => {
   const [profiles, setProfiles] = useState<Map<string, Profile>>(new Map());
   const [loading, setLoading] = useState(true); // Single loading state
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // Debounce search term
   const [sortBy, setSortBy] = useState("random"); // Default to random
   const [sortOrder, setSortOrder] = useState("desc");
   const [filterRarity, setFilterRarity] = useState<string | undefined>(undefined);
@@ -67,8 +69,15 @@ const MarketplacePage = () => {
       }
 
       // Apply search term filter
-      if (searchTerm.trim() !== "") {
-        query = query.ilike('nfts.name', `%${searchTerm.trim()}%`);
+      if (debouncedSearchTerm.trim() !== "") { // Use debounced search term
+        query = query.ilike('nfts.name', `%${debouncedSearchTerm.trim()}%`);
+      }
+
+      // Apply server-side sorting for 'listed_at' and 'price_sol'
+      if (sortBy === 'listed_at') {
+        query = query.order('created_at', { ascending: sortOrder === 'asc', foreignTable: 'nfts' });
+      } else if (sortBy === 'price_sol') {
+        query = query.order('list_price_sol', { ascending: sortOrder === 'asc' });
       }
 
       // Fetch all matching listings
@@ -88,7 +97,7 @@ const MarketplacePage = () => {
         is_liked_by_current_user: listing.nfts.nft_likes.some((like: { user_id: string }) => like.user_id === supabase.auth.getUser()?.id),
       }));
 
-      // Apply client-side sorting/shuffling to the entire fetched dataset
+      // Apply client-side sorting/shuffling only for 'random' and 'rarity'
       if (sortBy === 'random') {
         fetchedNfts = shuffleArray(fetchedNfts);
       } else if (sortBy === 'rarity') {
@@ -102,19 +111,8 @@ const MarketplacePage = () => {
             return indexB - indexA;
           }
         });
-      } else if (sortBy === 'listed_at') {
-        fetchedNfts.sort((a, b) => {
-          const dateA = new Date(a.created_at).getTime(); // Use NFT creation date for 'newest listing'
-          const dateB = new Date(b.created_at).getTime();
-          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-        });
-      } else if (sortBy === 'price_sol') {
-        fetchedNfts.sort((a, b) => {
-          const priceA = a.list_price_sol || 0;
-          const priceB = b.list_price_sol || 0;
-          return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
-        });
       }
+      // For 'listed_at' and 'price_sol', sorting is already done by the database.
 
       setListedNfts(fetchedNfts);
 
@@ -150,12 +148,12 @@ const MarketplacePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortBy, sortOrder, filterRarity, searchTerm]);
+  }, [sortBy, sortOrder, filterRarity, debouncedSearchTerm]); // Use debouncedSearchTerm here
 
   // Effect to trigger a full fetch when filters/sorts/search change
   useEffect(() => {
     fetchMarketplaceNfts();
-  }, [sortBy, sortOrder, filterRarity, searchTerm, fetchMarketplaceNfts]);
+  }, [fetchMarketplaceNfts]); // Now fetchMarketplaceNfts is the only dependency, and it correctly depends on debouncedSearchTerm, sortBy, sortOrder, filterRarity
 
   // Real-time updates
   useEffect(() => {
