@@ -276,7 +276,7 @@ const UploadNFT = ({ onNftMinted, solanaPrice, solanaPriceLoading }: UploadNFTPr
             )}
             <Button
               onClick={handleMintNFT}
-              className="w-full bg-primary text-primary-foreground border border-primary rounded-lg hover:bg-primary/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-2xl py-5"
+              className="w-full bg-mint-green text-black border border-mint-green rounded-lg hover:bg-mint-green/90 transition-all duration-150 ease-in-out shadow-md font-pixel text-2xl py-5"
               disabled={!selectedFile || loading || (creatorProfile && (creatorProfile.pixi_tokens || 0) < 1)}
             >
               {loading ? "Minting..." : "Mint NFT (1 Pixi Token)"}
