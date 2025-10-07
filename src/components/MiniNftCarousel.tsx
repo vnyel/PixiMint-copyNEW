@@ -41,35 +41,13 @@ const MiniNftCarousel = ({ nftNames }: MiniNftCarouselProps) => {
         return;
       }
 
-      let finalNftsData = nftsData;
-
-      // If no specific featured NFTs are found, fetch the latest 10
-      if (!finalNftsData || finalNftsData.length === 0) {
-        console.log("No specific featured NFTs found. Fetching latest 10 NFTs.");
-        const { data: latestNftsData, error: latestNftsError } = await supabase
-          .from('nfts')
-          .select(`
-            *,
-            nft_likes(user_id)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (latestNftsError) {
-          showError(`Failed to fetch latest NFTs for carousel: ${latestNftsError.message}`);
-          setLoading(false);
-          return;
-        }
-        finalNftsData = latestNftsData;
-      }
-
-      const processedNfts: NFT[] = (finalNftsData || []).map((nft: any) => ({
+      const processedNfts: NFT[] = (nftsData || []).map((nft: any) => ({
         ...nft,
         is_liked_by_current_user: currentUser ? nft.nft_likes.some((like: { user_id: string }) => like.user_id === currentUser.id) : false,
       }));
       setNfts(processedNfts);
 
-      const creatorIds = Array.from(new Set(processedNfts?.map(nft => nft.creator_id)));
+      const creatorIds = Array.from(new Set(nftsData?.map(nft => nft.creator_id)));
 
       if (creatorIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
@@ -118,8 +96,8 @@ const MiniNftCarousel = ({ nftNames }: MiniNftCarouselProps) => {
 
   if (nfts.length === 0) {
     return (
-      <div className="flex justify-center items-center h-96 w-64 bg-card/50 rounded-lg text-center text-muted-foreground text-sm p-4">
-        No NFTs to display. Mint one to see it here!
+      <div className="text-center text-muted-foreground text-lg p-8 border border-dashed border-border rounded-lg shadow-sm font-sans">
+        No featured NFTs found.
       </div>
     );
   }
