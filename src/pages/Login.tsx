@@ -8,7 +8,8 @@ import { loginUser } from "@/utils/auth";
 import { showError } from "@/utils/toast";
 import MiniNftCarousel from "@/components/MiniNftCarousel";
 import AuthPageStats from "@/components/AuthPageStats";
-import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
+import ContractAddressCard from "@/components/ContractAddressCard";
+import SplashScreen from "@/components/SplashScreen"; // Import SplashScreen
 
 const featuredNftNames = [
   "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
@@ -19,6 +20,7 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(true); // State for splash screen
   const navigate = useNavigate();
 
   // Placeholder Contract Address
@@ -38,18 +40,22 @@ const Login = () => {
     }
   };
 
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center w-full max-w-6xl">
         {/* AuthPageStats and new promotional card - now in the first column */}
-        <div className="hidden lg:flex flex-col justify-end self-start space-y-4"> {/* Added flex-col and space-y-4 */}
+        <div className="hidden lg:flex flex-col justify-end self-start space-y-4">
           <AuthPageStats />
           <Card className="bg-card/80 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-full text-card-foreground font-sans text-center">
             <CardContent className="p-0">
               <p className="text-lg font-bold text-primary">5 free mints for every new user!</p>
             </CardContent>
           </Card>
-          <ContractAddressCard contractAddress={placeholderContractAddress} /> {/* New Contract Address Card */}
+          <ContractAddressCard contractAddress={placeholderContractAddress} />
         </div>
         
         {/* Login/Register Card - this will be in the middle column */}
