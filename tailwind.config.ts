@@ -130,14 +130,6 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(-360deg)" },
         },
-        "gradient-shift": {
-          "0%, 100%": {
-            "background-position": "0% 50%",
-          },
-          "50%": {
-            "background-position": "100% 50%",
-          },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -146,7 +138,6 @@ export default {
         "blob": "blob 7s infinite",
         "spin-slow": "spin-slow 15s linear infinite",
         "spin-reverse-slow": "spin-reverse-slow 15s linear infinite",
-        "gradient-shift": "gradient-shift 15s ease infinite",
       },
     },
   },
