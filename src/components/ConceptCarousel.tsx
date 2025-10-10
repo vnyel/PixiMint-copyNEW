@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import TypewriterEffect from "./TypewriterEffect"; // Import TypewriterEffect
 
 const ConceptCarousel = () => {
   const slides = [
@@ -105,7 +106,7 @@ const ConceptCarousel = () => {
               <Card className="bg-background border border-border rounded-lg shadow-md h-full flex flex-col justify-between">
                 <CardHeader className="text-center pb-4">
                   <CardTitle className="text-3xl font-pixel text-primary flex items-center justify-center gap-3 mb-2">
-                    {slide.icon} {slide.title}
+                    {slide.icon} <TypewriterEffect text={slide.title} delay={40} />
                   </CardTitle>
                   <CardDescription className="text-muted-foreground text-lg">
                     {index === 0 && "A new era for digital art ownership."}

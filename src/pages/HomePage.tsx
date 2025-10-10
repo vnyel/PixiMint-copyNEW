@@ -13,8 +13,9 @@ import { useSession } from "@/contexts/SessionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSolanaPrice } from "@/hooks/use-solana-price";
 import NftCarousel from "@/components/NftCarousel";
-import ContractAddressCard from "@/components/ContractAddressCard"; // Import the new component
-import ConceptCarousel from "@/components/ConceptCarousel"; // Import the new ConceptCarousel
+import ContractAddressCard from "@/components/ContractAddressCard";
+import ConceptCarousel from "@/components/ConceptCarousel";
+import TypewriterEffect from "@/components/TypewriterEffect"; // Import TypewriterEffect
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ const HomePage = () => {
         {/* NFT Carousel Hero Section */}
         <section className="w-full max-w-6xl mx-auto mb-12">
           <h2 className="text-5xl md:text-7xl font-pixel mb-6 leading-tight text-center text-primary animate-pulse-text">
-            Featured PixiNFTs
+            <TypewriterEffect text="Featured PixiNFTs" delay={70} className="text-primary" />
           </h2>
           <NftCarousel nftNames={featuredNftNames} />
         </section>
@@ -96,7 +97,7 @@ const HomePage = () => {
           <Card className="bg-card border border-border rounded-lg shadow-lg p-6 flex flex-col justify-between">
             <CardHeader className="p-0 mb-4">
               <CardTitle className="text-2xl font-pixel text-primary flex items-center gap-2">
-                <GalleryVertical className="h-6 w-6" /> Collection Progress
+                <GalleryVertical className="h-6 w-6" /> <TypewriterEffect text="Collection Progress" delay={50} />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 space-y-4">
@@ -129,7 +130,7 @@ const HomePage = () => {
           <Card className="bg-card border border-border rounded-lg shadow-lg p-6 flex flex-col justify-between">
             <CardHeader className="p-0 mb-4">
               <CardTitle className="text-2xl font-pixel text-primary flex items-center gap-2">
-                <Sparkles className="h-6 w-6" /> Market Overview
+                <Sparkles className="h-6 w-6" /> <TypewriterEffect text="Market Overview" delay={50} />
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 space-y-4">
