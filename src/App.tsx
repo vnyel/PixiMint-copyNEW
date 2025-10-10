@@ -23,9 +23,48 @@ import { Profile } from "./types/nft";
 import { supabase } from "./integrations/supabase/client";
 import { MessageSquare, ArrowLeft, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import SplashScreen from "@/components/SplashScreen"; // Import SplashScreen
 
 const queryClient = new QueryClient();
+
+// New wrapper component to manage the global splash screen
+const GlobalSplashScreenWrapper = () => {
+  const location = useLocation();
+  const [showSplash, setShowSplash] = useState(true);
+  const [currentPathname, setCurrentPathname] = useState(location.pathname);
+
+  useEffect(() => {
+    // Reset splash state and path when location changes
+    if (location.pathname !== currentPathname) {
+      setShowSplash(true);
+      setCurrentPathname(location.pathname);
+    }
+  }, [location.pathname, currentPathname]);
+
+  useEffect(() => {
+    if (showSplash) {
+      const duration = location.pathname === "/" ? 2000 : 1000; // 2 seconds for home, 1 second for others
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash, location.pathname]); // Depend on location.pathname to re-evaluate duration
+
+  return (
+    <>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} duration={location.pathname === "/" ? 2000 : 1000} />}
+      {!showSplash && (
+        <SessionContextProvider>
+          <SolanaWalletContextProvider>
+            <AppContent />
+          </SolanaWalletContextProvider>
+        </SessionContextProvider>
+      )}
+    </>
+  );
+};
+
 
 const AppContent = () => {
   const { user: currentUser, loading: sessionLoading } = useSession();
@@ -155,14 +194,9 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Removed <Toaster /> from @/components/ui/toaster */}
         <Sonner />
         <BrowserRouter>
-          <SessionContextProvider>
-            <SolanaWalletContextProvider>
-              <AppContent />
-            </SolanaWalletContextProvider>
-          </SessionContextProvider>
+          <GlobalSplashScreenWrapper />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

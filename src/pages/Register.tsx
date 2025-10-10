@@ -9,7 +9,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import MiniNftCarousel from "@/components/MiniNftCarousel";
 import AuthPageStats from "@/components/AuthPageStats";
 import ContractAddressCard from "@/components/ContractAddressCard";
-import SplashScreen from "@/components/SplashScreen"; // Import SplashScreen
+
 
 const featuredNftNames = [
   "#426", "#6639", "#9075", "#9724", "#1956", "#3522", "#9925", "#6695", "#2114",
@@ -20,7 +20,6 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showSplash, setShowSplash] = useState(true); // State for splash screen
   const navigate = useNavigate();
 
   // Placeholder Contract Address
@@ -39,10 +38,6 @@ const Register = () => {
       navigate("/login");
     }
   };
-
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-auth-image text-foreground font-sans p-4 relative">
