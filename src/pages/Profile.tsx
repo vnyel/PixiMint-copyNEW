@@ -19,6 +19,7 @@ import { useSolanaPrice } from "@/hooks/use-solana-price";
 import { toggleLikeNft } from "@/utils/nft";
 import ListNftDialog from "@/components/ListNftDialog"; // Import ListNftDialog
 import { delistNft } from "@/utils/marketplace"; // Import delistNft
+import FadeInScrollCard from "@/components/FadeInScrollCard"; // Import FadeInScrollCard
 
 interface ProfilePageProps {
   openChatWithRecipient: (recipient: Profile) => void;
@@ -415,39 +416,41 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
             ) : (
               <div className="p-6 rounded-lg shadow-xl"> {/* Removed bg-black */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {userOwnedNfts.map((nft) => (
-                    <div key={nft.id} className="relative">
-                      <NftCard
-                        nft={nft}
-                        creatorUsername={profile.username} // Display original minter's username
-                        creatorIsVerified={profile.is_verified}
-                        creatorProfile={profile}
-                        solanaPrice={solanaPrice}
-                        onLikeToggle={handleLikeToggle}
-                      />
-                      {nft.is_listed ? (
-                        <div className="absolute top-6 right-6 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
-                          <Store className="h-3 w-3" /> Listed for {nft.list_price_sol} SOL
-                          {isOwner && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-0 ml-2 text-white hover:text-gray-200"
-                              onClick={() => nft.listing_id && handleDelistNft(nft.listing_id)}
-                              disabled={loading}
-                            >
-                              (Delist)
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        isOwner && (
-                          <div className="absolute top-6 right-6 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
-                            Not Listed
+                  {userOwnedNfts.map((nft, index) => (
+                    <FadeInScrollCard key={nft.id} delay={index * 100}> {/* Staggered delay */}
+                      <div className="relative">
+                        <NftCard
+                          nft={nft}
+                          creatorUsername={profile.username} // Display original minter's username
+                          creatorIsVerified={profile.is_verified}
+                          creatorProfile={profile}
+                          solanaPrice={solanaPrice}
+                          onLikeToggle={handleLikeToggle}
+                        />
+                        {nft.is_listed ? (
+                          <div className="absolute top-6 right-6 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
+                            <Store className="h-3 w-3" /> Listed for {nft.list_price_sol} SOL
+                            {isOwner && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-2 text-white hover:text-gray-200"
+                                onClick={() => nft.listing_id && handleDelistNft(nft.listing_id)}
+                                disabled={loading}
+                              >
+                                (Delist)
+                              </Button>
+                            )}
                           </div>
-                        )
-                      )}
-                    </div>
+                        ) : (
+                          isOwner && (
+                            <div className="absolute top-6 right-6 bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                              Not Listed
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </FadeInScrollCard>
                   ))}
                 </div>
               </div>
@@ -460,16 +463,17 @@ const ProfilePage = ({ openChatWithRecipient }: ProfilePageProps) => {
             <h3 className="text-3xl font-pixel text-primary mb-6 text-center">NFTs Owned by @{profile.username}</h3>
             <div className="p-6 rounded-lg shadow-xl"> {/* Removed bg-black */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userOwnedNfts.map((nft) => (
-                  <NftCard
-                    key={nft.id}
-                    nft={nft}
-                    creatorUsername={profile.username}
-                    creatorIsVerified={profile.is_verified}
-                    creatorProfile={profile}
-                    solanaPrice={solanaPrice}
-                    onLikeToggle={handleLikeToggle}
-                  />
+                {userOwnedNfts.map((nft, index) => (
+                  <FadeInScrollCard key={nft.id} delay={index * 100}> {/* Staggered delay */}
+                    <NftCard
+                      nft={nft}
+                      creatorUsername={profile.username}
+                      creatorIsVerified={profile.is_verified}
+                      creatorProfile={profile}
+                      solanaPrice={solanaPrice}
+                      onLikeToggle={handleLikeToggle}
+                    />
+                  </FadeInScrollCard>
                 ))}
               </div>
             </div>
