@@ -212,3 +212,11 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Parallax Gradient Background for GalleryPage */
+.bg-parallax-gradient {
+  background: linear-gradient(270deg, #00ffa3, #00c6ff, #a855f7, #00ffa3); /* mint-green, light blue, purple, back to mint-green */
+  background-size: 400% 400%; /* Larger than viewport to allow movement */
+  background-attachment: fixed; /* Key for parallax effect */
+  animation: gradient-shift 15s ease infinite;
+}
