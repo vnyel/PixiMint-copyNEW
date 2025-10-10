@@ -30,30 +30,30 @@ const queryClient = new QueryClient();
 // New wrapper component to manage the global splash screen
 const GlobalSplashScreenWrapper = () => {
   const location = useLocation();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false); // Default to false
   const [currentPathname, setCurrentPathname] = useState(location.pathname);
 
   useEffect(() => {
-    // Reset splash state and path when location changes
+    const splashRoutes = ["/", "/login", "/register"];
+    const isSplashRoute = splashRoutes.includes(location.pathname);
+
     if (location.pathname !== currentPathname) {
-      setShowSplash(true);
       setCurrentPathname(location.pathname);
+      if (isSplashRoute) {
+        setShowSplash(true);
+        const timer = setTimeout(() => {
+          setShowSplash(false);
+        }, 2000); // 2 seconds for specified routes
+        return () => clearTimeout(timer);
+      } else {
+        setShowSplash(false); // Immediately hide splash for non-splash routes
+      }
     }
   }, [location.pathname, currentPathname]);
 
-  useEffect(() => {
-    if (showSplash) {
-      const duration = location.pathname === "/" ? 2000 : 1000; // 2 seconds for home, 1 second for others
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [showSplash, location.pathname]); // Depend on location.pathname to re-evaluate duration
-
   return (
     <>
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} duration={location.pathname === "/" ? 2000 : 1000} />}
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} duration={2000} />}
       {!showSplash && (
         <SessionContextProvider>
           <SolanaWalletContextProvider>
